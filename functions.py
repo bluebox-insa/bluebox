@@ -1,6 +1,5 @@
 from subprocess import check_output
 
-
 def get_paired_devices():
     devices = []
     try:
@@ -27,40 +26,38 @@ def get_connected_devices():
         devices.append(state)
     return devices
 
-
 def connect_device(d):
     from time import sleep
 
+    # check current state
     state = is_connected_to()
+    if state != "":
+        if state == d:
+            # we are already connected
+            return
+        else:
+            disconnect_device(d)
 
-    if state == d:
-        return
-    else:
+    # pair if needed
+    if d not in get_paired_devices():
         try:
-            check_output(["/usr/bin/bluetoothctl disconnect"], shell=True)
+            check_output(["/bin/echo -e 'power on\nscan on' | /usr/bin/bluetoothctl"], shell=True)
+            sleep(2)
+            check_output([f"/bin/echo -e 'power on\npair {d}' | /usr/bin/bluetoothctl"], shell=True)
         except Exception as e:
             print(f"Exception at {current_func()}: {e}")
 
-    elif d in get_paired_devices():
-        pass
-
+    # connect
     try:
-        check_output(["/bin/echo -e 'power on\nscan on' | /usr/bin/bluetoothctl"], shell=True)
-        sleep(2)
-        check_output([f"/bin/echo -e 'power on\npair {d}' | /usr/bin/bluetoothctl"], shell=True)
-
+        check_output([f"/bin/echo -e 'power on\nconnect {d}' | /usr/bin/bluetoothctl"], shell=True)
     except Exception as e:
         print(f"Exception at {current_func()}: {e}")
-    return
 
 def disconnect_device(d):
     try:
-        check_output(["/bin/echo -e 'power on\nscan on' | /usr/bin/bluetoothctl"], shell=True)
-        sleep(2)
-        check_output([f"/bin/echo -e 'power on\npair {d}' | /usr/bin/bluetoothctl"], shell=True)
+        check_output(["/usr/bin/bluetoothctl disconnect "+d], shell=True)
     except Exception as e:
         print(f"Exception at {current_func()}: {e}")
-    return
 
 def is_connected_to():
     # pacmd list-cards: device.string = "88:C6:26:EE:BC:FE"
@@ -74,7 +71,7 @@ def is_connected_to():
 
 def play_music():
     try:
-        check_output(["/usr/bin/nvlc ~/Downloads/music.mp3"], shell=True)
+        check_output(["/usr/bin/nvlc --intf http --http-host 192.168.0.142 --http-password cookie ~/Downloads/music.mp3"], shell=True)
     except Exception as e:
         print(f"Exception at {current_func()}: {e}")
 
