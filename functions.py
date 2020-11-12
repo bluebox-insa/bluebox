@@ -1,5 +1,18 @@
 from subprocess import check_output
 
+def get_controllers():
+    controllers = []
+    try:
+        controllersRaw = check_output(["/usr/bin/bluetoothctl list"], shell=True).decode("utf-8")[:-1].split("\n").replace("Controller", "").replace("[default]", "").trim()
+        for line in controllersRaw:
+            controllers.append({
+                "mac_addr" : line.split(" ")[0],
+                "name" : line.split(" ")[1],
+                })
+    except Exception as e:
+        print(f"Exception at {current_func()}: {e}")
+    return controllers
+
 def get_paired_devices():
     devices = []
     try:
@@ -30,7 +43,7 @@ def connect_device(d):
     from time import sleep
 
     # check current state
-    state = is_connected_to()
+    state = currently_connected_to()
     if state != "":
         if state == d:
             # we are already connected
@@ -59,7 +72,7 @@ def disconnect_device(d):
     except Exception as e:
         print(f"Exception at {current_func()}: {e}")
 
-def is_connected_to():
+def currently_connected_to():
     # pacmd list-cards: device.string = "88:C6:26:EE:BC:FE"
     # return "38:18:4C:BD:27:14"
     device = ""
@@ -69,11 +82,22 @@ def is_connected_to():
         print(f"Exception at {current_func()}: {type(e)}")
     return device
 
-def play_music():
+def play_music(ipAddr, passwd="cookie", file="~/music.mp3"):
     try:
-        check_output(["/usr/bin/nvlc --intf http --http-host 192.168.0.142 --http-password cookie ~/Downloads/music.mp3"], shell=True)
+        check_output([f"/usr/bin/cvlc --intf http --http-host {ipAddr} --http-password {passwd} {file}"], shell=True)
     except Exception as e:
         print(f"Exception at {current_func()}: {e}")
+
+def set_delay():
+    pass
+    # pactl set-port-latency-offset bluez_card.88_C6_26_EE_BC_FE unknown-output 1000000
+    # pactl set-card-profile        bluez_card.88_C6_26_EE_BC_FE off
+    # pactl set-card-profile        bluez_card.88_C6_26_EE_BC_FE a2dp_sink
+    #
+    # pactl set-port-latency-offset bluez_card.30_21_15_54_78_AA handsfree-output 1000000
+    # pactl set-card-profile        bluez_card.30_21_15_54_78_AA off
+    # pactl set-card-profile        bluez_card.30_21_15_54_78_AA a2dp_sink
+
 
 def current_func():
     from inspect import currentframe
@@ -91,14 +115,3 @@ def current_func():
                     if len(funcs) > 1:
                         return None
     return funcs[0] if funcs else None
-
-# pactl set-port-latency-offset bluez_card.88_C6_26_EE_BC_FE unknown-output 1000000
-# pactl set-card-profile        bluez_card.88_C6_26_EE_BC_FE off
-# pactl set-card-profile        bluez_card.88_C6_26_EE_BC_FE a2dp_sink
-
-
-# pactl set-port-latency-offset bluez_card.30_21_15_54_78_AA handsfree-output 1000000
-# pactl set-card-profile        bluez_card.30_21_15_54_78_AA off
-# pactl set-card-profile        bluez_card.30_21_15_54_78_AA a2dp_sink
-
-
