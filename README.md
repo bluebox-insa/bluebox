@@ -1,11 +1,10 @@
 # Innotech MVP :headphones::zap:
 
-Turn your raspberry pi into a Bluetooth hub to play your music through multiple bluetooth speakers 🔊🔊🔊.
+Turn your **Raspberry Pi** into a **Bluetooth hub** to play your music through multiple bluetooth **synced** speakers 🔊🔊🔊.
 
 1. [Requirements 📜](<#Requirements 📜>)
 1. [Your path to multi-devices sound on Linux ! 🔥](./installation/README.md)
-
-1. [Troubleshooting 🛠](<#Troubleshooting 🛠>)
+1. [Setup Python server 🐍](<#Setup Python server 🐍>)
 
 ## Requirements 📜
 - Raspberry pi (model 3B used)
@@ -15,7 +14,7 @@ Turn your raspberry pi into a Bluetooth hub to play your music through multiple 
     - 1 in AUX mode (connected with JACK cable to the headphone output of the Raspberry)
     ![architecture](./installation/architecture.png)
 
-## Install des modules pythons
+## Setup Python server 🐍
 ```bash
     pip install flask pybluez Flask-JSON
     flask run
