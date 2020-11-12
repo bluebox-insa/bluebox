@@ -1,14 +1,19 @@
 # Innotech MVP :headphones::zap:
 
-Comme on a tous plus ou moins réussi, il y a un README pour chaque tentative de configuration:
-- celle de Cecile et Eloise
-- celle de Clément
-- celle d'Antoine et Gabriel
+Turn your raspberry pi into a Bluetooth hub to play your music through multiple bluetooth speakers 🔊🔊🔊.
 
-Hésitez pas à ajouter vos fichiers ou ajouter/supprimer des choses :tipping_hand_person:
-On se mettra d'accord sur une version commune :sparkles:
+1. [Requirements 📜](<#Requirements 📜>)
+1. [Your path to multi-devices sound on Linux ! 🔥](./installation/README.md)
 
+1. [Troubleshooting 🛠](<#Troubleshooting 🛠>)
 
+## Requirements 📜
+- Raspberry pi (model 3B used)
+- Jack cable
+- 2 speakers :
+    - 1 in bluetooth mode
+    - 1 in AUX mode (connected with JACK cable to the headphone output of the Raspberry)
+    ![architecture](./installation/architecture.png)
 
 ## Install des modules pythons
 ```bash
