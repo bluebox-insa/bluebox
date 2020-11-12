@@ -10,7 +10,6 @@ FlaskJSON(app)
 def hello():
     return 'Hello, World!'
 
-
 @app.route('/devices')
 @as_json
 def devices():
@@ -25,5 +24,3 @@ def devices():
 
 if __name__ == '__main__':
     app.run()
-
-# https://pypi.org/project/Flask-JSON/
