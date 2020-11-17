@@ -11,6 +11,7 @@ def hello():
     return 'Hello, World!'
 
 @app.route('/devices')
+# ?scan ou ?paired ou ?connected
 @as_json
 def devices():
     devicesRaw = discover_devices(lookup_names=True)
@@ -22,20 +23,34 @@ def devices():
         })
     return devices
 
-@app.route('/controllers')
+@app.route('/controllers', methods = ['POST', 'GET'])
 @as_json
 def get_controllers():
-    controllers = []
-    try:
-        controllersRaw = check_output(["/usr/bin/bluetoothctl list"], shell=True).decode("utf-8")[:-1].replace("Controller", "").replace("[default]", "").strip().split("\n")
-        for line in controllersRaw:
-            controllers.append({
-                "mac_addr" : line.split(" ")[0],
-                "name" : line.split(" ")[1],
-                })
-    except Exception as e:
-        print(f"Exception at {current_func()}: {e}")
-    return controllers
+
+    if request.method == "GET":
+        controllers = []
+        try:
+            controllersRaw = check_output(["/usr/bin/bluetoothctl list"], shell=True).decode("utf-8")[:-1].replace("Controller", "").replace("[default]", "").strip().split("\n")
+            for line in controllersRaw:
+                controllers.append({
+                    "mac_addr" : line.split(" ")[0],
+                    "name" : line.split(" ")[1],
+                    })
+        except Exception as e:
+            print(f"Exception at {current_func()}: {e}")
+        return controllers
+
+    else:
+        pass
+
+@app.route('/dashboard/<name>')
+def dashboard(name):
+   return 'welcome %s' % name
 
 if __name__ == '__main__':
     app.run()
+    # debug = True
+    # host = ""
+    # port = ""
+
+    
