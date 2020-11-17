@@ -60,13 +60,16 @@ def disconnect_device(d):
         print(f"Exception at {current_func()}: {e}")
 
 def currently_connected_to():
+    from subprocess import CalledProcessError
     # pacmd list-cards: device.string = "88:C6:26:EE:BC:FE"
     # return "38:18:4C:BD:27:14"
     device = ""
     try:
         device = check_output(["/usr/bin/bluetoothctl info | /bin/grep -oE 'Device (\\w\\w\\:){5}\\w\\w'"], shell=True)[7:]
+    except CalledProcessError as e:
+        pass
     except Exception as e:
-        print(f"Exception at {current_func()}: {type(e)}")
+        print(f"Exception at {current_func()}: {e}")
     return device
 
 def play_music(ipAddr, passwd="cookie", file="~/music.mp3"):
