@@ -8,7 +8,6 @@ def get_paired_devices():
         print(f"Exception at {current_func()}: {e}")
     return devices
 
-
 def is_device_connected(d):
     isConnected = False
     try:
@@ -40,18 +39,24 @@ def connect_device(d):
 
     # pair if needed
     if d not in get_paired_devices():
-        try:
-            check_output(["/bin/echo -e 'power on\nscan on' | /usr/bin/bluetoothctl"], shell=True)
-            sleep(2)
-            check_output([f"/bin/echo -e 'power on\npair {d}' | /usr/bin/bluetoothctl"], shell=True)
-        except Exception as e:
-            print(f"Exception at {current_func()}: {e}")
+        print(f"Pairing: {pair_device(d)}")
 
     # connect
     try:
-        check_output([f"/bin/echo -e 'power on\nconnect {d}' | /usr/bin/bluetoothctl"], shell=True)
+        return check_output([f"/bin/echo -e 'power on\nconnect {d}' | /usr/bin/bluetoothctl"], shell=True)
     except Exception as e:
         print(f"Exception at {current_func()}: {e}")
+    return False
+
+def pair_device(d):
+    from time import sleep
+    try:
+        check_output(["/bin/echo -e 'power on\nscan on' | /usr/bin/bluetoothctl"], shell=True)
+        sleep(2)
+        return check_output([f"/bin/echo -e 'power on\npair {d}' | /usr/bin/bluetoothctl"], shell=True)
+    except Exception as e:
+        print(f"Exception at {current_func()}: {e}")
+    return False
 
 def disconnect_device(d):
     try:
