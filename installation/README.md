@@ -16,6 +16,9 @@
     ![architecture](./architecture.png)
 
 ## Getting started 🚦
+
+> If you want to setup your raspberry without external monitor, HDMI cable etc. You can follow [this](https://desertbot.io/blog/headless-raspberry-pi-3-bplus-ssh-wifi-setup) tutorial.
+
 - **Install the raspbian OS on the SD card and make sure everything is up to date** by running the following commands:
 
 ```bash
@@ -259,16 +262,3 @@ You can then open a browser on : http://RASPBERRY_IP:8080/ and enjoy a great GUI
         pulseaudio -k # kill any previous pulseaudio instance
         pulseaudio --start
         ```
-
-
-
-
-
-
-
-
-
-
-
-
-
