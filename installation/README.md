@@ -17,6 +17,8 @@
 
 ## Getting started 🚦
 
+**Be careful** : You will need Raspbian **with desktop** in order to fully setup your raspberry (paprefs espcially). You can easily flash your SD card with the [Raspberry Pi Imager](https://www.raspberrypi.org/software/)
+
 > If you want to setup your raspberry without external monitor, HDMI cable etc. You can follow [this](https://desertbot.io/blog/headless-raspberry-pi-3-bplus-ssh-wifi-setup) tutorial.
 
 - **Install the raspbian OS on the SD card and make sure everything is up to date** by running the following commands:
