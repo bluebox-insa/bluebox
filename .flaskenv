@@ -1,5 +1,5 @@
 #.env
-FLASK_APP=hello
+FLASK_APP=bluebox
 FLASK_ENV=development
 # FLASK_ENV - Controls the environment.
 # FLASK_DEBUG - Enables debug mode.

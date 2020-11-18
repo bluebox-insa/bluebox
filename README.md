@@ -16,8 +16,9 @@ Turn your **Raspberry Pi** into a **Bluetooth hub** to play your music through m
 
 ## Setup Python server 🐍
 ```bash
-    pip install flask pybluez Flask-JSON python-dotenv
-    flask run
+    pip3 install flask Flask-JSON python-dotenv
+    # [git clone innotech-insa/bluetool and follow installation steps]
+    flask run --host 192.168.0.142
 ```
 
 [Source - Flask JSON](https://pypi.org/project/Flask-JSON/)
