@@ -13,7 +13,7 @@
     - 1 in bluetooth mode
     - 1 in AUX mode (connected with JACK cable to the headphone output of the Raspberry)
 
-    ![architecture](./architecture.png)
+    ![architecture](./images/architecture.png)
 
 ## Getting started 🚦
 
@@ -180,7 +180,7 @@ sudo apt-get autoremove
     Once you have access to your Raspberry GUI
     - launch a new terminal and launch `paprefs`
     - check the *Add virtual output device for simultaneous output on all local sound cards* option in the **Simultaneous Output panel**
-    ![paprefs](./paprefs.jpg)
+    ![paprefs](./images/paprefs.jpg)
     - close the window and issue the commands 
         ```bash
         pulseaudio -k # kill any previous pulseaudio instance
@@ -196,7 +196,7 @@ sudo apt-get autoremove
     ```
 
     Select the *Simultaneous output* option
-    ![vlc](./vlc.png)
+    ![vlc](./images/vlc.png)
 
     After a couple of seconds, some sound should come up from your two speakers !
 
@@ -210,7 +210,7 @@ nvlc --intf http --http-host RASPBERRY_IP --http-password YOUR_PASSWORD MUSIC_FI
 ```
 
 You can then open a browser on : http://RASPBERRY_IP:8080/ and enjoy a great GUI
-![vlc-gui](./computer_interface.png)
+![vlc-gui](./images/computer_interface.png)
 
 ## Troubleshooting 🛠
 
