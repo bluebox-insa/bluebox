@@ -66,9 +66,6 @@ echo -e "\033[1;35m>>> Paste various configurations (bashrc, gitconfig, vimrc, .
     "
 
     inputrc="set bell-style none
-    $if Bash
-        Space: magic-space
-    $endif
     "
 
     vimrc='"-----------------------------------------------------------
@@ -109,7 +106,7 @@ echo -e "\033[1;35m>>> Paste various configurations (bashrc, gitconfig, vimrc, .
     syntax on
     set t_Co=256
     set background=dark                         " if not already set
-    colorscheme peachpuff
+    colorscheme darkblue
 
     " keyboard nice shortcuts
     nnoremap ,, :w<CR>
@@ -117,24 +114,29 @@ echo -e "\033[1;35m>>> Paste various configurations (bashrc, gitconfig, vimrc, .
     nnoremap ,; :x<CR>
     nnoremap :: :%s///g<Left><Left>
     '
-    echo "$bashrc" >> ~/.bashrc
-    echo "$gitconfig" > ~/.gitconfig
-    echo "$vimrc" > ~/.vimrc
-    echo "$inputrc" > ~/.inputrc
+    echo "$bashrc" >> /home/pi/.bashrc
+    source /home/pi/.bashrc
+    echo "$gitconfig" > /home/pi/.gitconfig
+    echo "$vimrc" > /home/pi/.vimrc
+    echo "$inputrc" > /home/pi/.inputrc
     sudo apt-get install -y vim
+    read -p $'\e[1;35m[Press Enter to continue]\e[0m'
 
 
 echo -e "\033[1;35m>>> Make sure everything is up to date \033[00m"
     sudo apt-get update
-    sudo apt-get upgrade
-    sudo apt-get autoremove
+    sudo apt-get upgrade -y
+    sudo apt-get autoremove -y
+    read -p $'\e[1;35m[Press Enter to continue]\e[0m'
 
 echo -e "\033[1;35m>>> Make sure that bluealsa is not installed to avoid potential conflicts \033[00m"
     sudo apt-get remove -y bluealsa
+    read -p $'\e[1;35m[Press Enter to continue]\e[0m'
 
 echo -e "\033[1;35m>>> Install and launch pulseaudio \033[00m"
     sudo apt-get install -y pulseaudio pulseaudio-module-bluetooth
     pulseaudio --start
+    read -p $'\e[1;35m[Press Enter to continue]\e[0m'
 
 
 echo -e "\033[1;35m>>> Add users to user groups (This is not necessary but will be if we want to turn pulseaudio into a service) \033[00m"
@@ -143,6 +145,7 @@ echo -e "\033[1;35m>>> Add users to user groups (This is not necessary but will 
     sudo adduser pulse audio
     sudo adduser pi pulse-access
     sudo adduser root pulse-access
+    read -p $'\e[1;35m[Press Enter to continue]\e[0m'
 
 echo -e "\033[1;35m>>> Paste asoundrc configuration \033[00m"
     asoundrc="pcm.pulse {
@@ -158,3 +161,17 @@ echo -e "\033[1;35m>>> Paste asoundrc configuration \033[00m"
     "
     sudo echo "$asoundrc" > /etc/asound.conf
     sudo echo "$asoundrc" > ~/.asoundrc
+    read -p $'\e[1;35m[Press Enter to continue]\e[0m'
+
+echo -e "\033[1;35m>>> Check that selected mode is a2dp_sink \033[00m"
+    pactl list
+    read -p $'\e[1;35m[Press Enter to continue]\e[0m'
+
+echo -e "\033[1;35m>>> Create simultaneous audio output \033[00m"
+    pactl load-module module-combine-sink
+    read -p $'\e[1;35m[Press Enter to continue]\e[0m'
+
+echo -e "\033[1;35m>>> Download an audio sample \033[00m"
+    wget "https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_1MG.mp3"
+    read -p $'\e[1;35m[Press Enter to continue]\e[0m'
+
