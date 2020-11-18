@@ -38,7 +38,7 @@ def get_pair(mac_addr):
     return f"Trying to pair with {mac_addr}   =>   {bluetooth.pair(mac_addr)}"
 
 
-@app.route('/trust/<mac_addr>', methods["GET", "PUT"])
+@app.route('/trust/<mac_addr>', methods=["GET", "PUT"])
 @as_json
 def get_trust(mac_addr):
     return f"Trying to trust with {mac_addr}   =>   {bluetooth.trust(mac_addr)}"
@@ -73,7 +73,7 @@ def get_play():
     return False
 
 
-@app.route('/controllers', methods = ['POST', 'GET'])
+@app.route('/controllers', methods=["GET", "PUT"])
 @as_json
 def get_controllers():
     if request.method == "GET":
@@ -84,11 +84,12 @@ def get_controllers():
             print(f"Exception at {current_func()}: {e}")
         return controllers
 
-    elif request.method == "POST":
+    elif request.method == "PUT":
         pass
 
 if __name__ == '__main__':
-    app.run()
+    from sys import argv
+    app.run(host=argv[1]) if argv[1] else app.run(host="192.168.0.142")
     # debug = True
     # host = ""
     # port = ""
