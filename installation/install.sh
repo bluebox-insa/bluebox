@@ -169,10 +169,12 @@ echo -e "\033[1;35m>>> Check that selected mode is a2dp_sink \033[00m"
 
 echo -e "\033[1;35m>>> Create simultaneous audio output \033[00m"
     pactl load-module module-combine-sink
+    pulseaudio --start
     # read -p $'\e[1;35m[Press Enter to continue]\e[0m'
 
 echo -e "\033[1;35m>>> Download an audio sample \033[00m"
     wget "https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_1MG.mp3"
+    mv file_example_MP3_1MG.mp3 $HOME/music.mp3
     # read -p $'\e[1;35m[Press Enter to continue]\e[0m'
 
 echo -e "\033[1;35m>>> Install Python dependencies \033[00m"
@@ -183,3 +185,6 @@ echo -e "\033[1;35m>>> Install Python dependencies \033[00m"
 
 echo -e "\033[1;35m>>> Install cairo \033[00m"
     sudo apt-get install -y libcairo2-dev
+
+echo -e "\033[1;35m>>> Install vlc \033[00m"
+    sudo apt-get install -y vlc

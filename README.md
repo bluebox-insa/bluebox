@@ -21,7 +21,7 @@ Turn your **Raspberry Pi** into a **Bluetooth hub** to play your music through m
     git clone https://github.com/innotech-insa/innotech-mvp.git
     cd innotech-mvp/installation
     chmod a+x install.sh
-    sudo ./install.sh
+    ./install.sh
     source ~/.bashrc
     # install bluetool
     cd ~
