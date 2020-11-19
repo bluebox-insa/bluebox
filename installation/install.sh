@@ -176,10 +176,10 @@ echo -e "\033[1;35m>>> Download an audio sample \033[00m"
     read -p $'\e[1;35m[Press Enter to continue]\e[0m'
 
 echo -e "\033[1;35m>>> Install Python dependencies \033[00m"
-    sudo apt-get install python3-pip
-    sudo apt-get install libcairo2-dev
+    sudo apt-get install -y python3-pip
+    sudo apt-get install -y libcairo2-dev
     pip3 install flask Flask-JSON python-dotenv
     echo 'export PATH="/$HOME/.local/bin:$PATH"' >> ~/.bashrc
 
 echo -e "\033[1;35m>>> Install cairo \033[00m"
-    sudo apt-get install libcairo2-dev
+    sudo apt-get install -y libcairo2-dev

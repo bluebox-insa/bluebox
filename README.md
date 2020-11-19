@@ -17,7 +17,7 @@ Turn your **Raspberry Pi** into a **Bluetooth hub** to play your music through m
 ## Run from a fresh Raspberry install 🐍
 ```bash
     # base configuration
-    sudo apt-get install git
+    sudo apt-get -y install git
     git clone https://github.com/innotech-insa/innotech-mvp.git
     cd innotech-mvp/installation
     chmod a+x install.sh
