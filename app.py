@@ -47,9 +47,19 @@ def get_trust(mac_addr):
 @app.route('/connect/<mac_addr>', methods=["GET", "PUT"])
 @as_json
 def get_connect(mac_addr):
-    if mac_addr in bluetooth.get_connected_devices():
+    inArrayC = False
+    for i in bluetooth.get_connected_devices():
+        print("value: " + str(i.values()))
+        if mac_addr.encode() in i.values():
+            inArrayC = True
+    inArrayPaired = False
+    for i in bluetooth.get_paired_devices():
+        print("value: " + str(i.values()))
+        if mac_addr.encode() in i.values():
+            inArrayPaired = True
+    if inArrayC:
         return ("already connected", 200)
-    elif mac_addr in bluetooth.get_paired_devices():
+    elif inArrayPaired:
         isConnected = bluetooth.connect(mac_addr)
         return ("connect.... ok", 200 if isConnected else 500)
     else:
@@ -59,6 +69,20 @@ def get_connect(mac_addr):
             return ("pair.... ok<br>connect.... ok", 200 if isConnected else 500)
         else:
             return ("pair.... failed", 500)
+
+@app.route('/disconnect/<mac_addr>', methods=["GET", "PUT"])
+@as_json
+def get_disconnect(mac_addr):
+    inArray = False
+    for i in bluetooth.get_connected_devices():
+        print("value: " + str(i.values()))
+        if mac_addr.encode() in i.values():
+            inArray = True
+    if inArray:
+        isDisconnected = bluetooth.disconnect(mac_addr)
+        return ("Disconnect .... ok", 200 if isDisconnected else 500)
+    else:
+        return ("Device is already disconnected .... failed", 200)
 
 
 @app.route('/play', methods=["GET", "PUT"])
