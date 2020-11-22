@@ -35,9 +35,6 @@ echo -e "\033[1;35m>>> Paste various configurations (bashrc, gitconfig, vimrc, .
     gitconfig="#-----------------------------------------------------------
     # INNOTECH-MVP gitconfig template
     #-----------------------------------------------------------
-    [user]
-        name = Gabriel Forien
-        email = gforien+dev@gmail.com
     [color]
         diff   = auto
         status = auto
@@ -114,30 +111,26 @@ echo -e "\033[1;35m>>> Paste various configurations (bashrc, gitconfig, vimrc, .
     nnoremap ,; :x<CR>
     nnoremap :: :%s///g<Left><Left>
     '
-    echo "$bashrc" >> $HOME/.bashrc
-    echo "$bashrc" >> $HOME/.bashrc
-    echo "$gitconfig" > $HOME/.gitconfig
-    echo "$vimrc" > $HOME/.vimrc
-    echo "$inputrc" > $HOME/.inputrc
-    sudo apt-get install -y vim
-    # read -p $'\e[1;35m[Press Enter to continue]\e[0m'
-
+    echo "$bashrc" >> /home/pi/.bashrc
+    echo "$bashrc" >> /home/pi/.bashrc
+    echo "$gitconfig" > /home/pi/.gitconfig
+    echo "$vimrc" > /home/pi/.vimrc
+    echo "$inputrc" > /home/pi/.inputrc
 
 echo -e "\033[1;35m>>> Make sure everything is up to date \033[00m"
+    sudo apt-get install -y vim
+    sudo apt-get remove -y chromium-browser chromium-browser-l10n chromium-codecs-ffmpeg-extra
+    sudo apt-mark hold raspberrypi-kernel raspberrypi-bootloader
     sudo apt-get update
     sudo apt-get upgrade -y
     sudo apt-get autoremove -y
-    # read -p $'\e[1;35m[Press Enter to continue]\e[0m'
 
 echo -e "\033[1;35m>>> Make sure that bluealsa is not installed to avoid potential conflicts \033[00m"
     sudo apt-get remove -y bluealsa
-    # read -p $'\e[1;35m[Press Enter to continue]\e[0m'
 
 echo -e "\033[1;35m>>> Install and launch pulseaudio \033[00m"
     sudo apt-get install -y pulseaudio pulseaudio-module-bluetooth
     pulseaudio --start
-    # read -p $'\e[1;35m[Press Enter to continue]\e[0m'
-
 
 echo -e "\033[1;35m>>> Add users to user groups (This is not necessary but will be if we want to turn pulseaudio into a service) \033[00m"
     sudo adduser pi audio
@@ -145,7 +138,6 @@ echo -e "\033[1;35m>>> Add users to user groups (This is not necessary but will 
     sudo adduser pulse audio
     sudo adduser pi pulse-access
     sudo adduser root pulse-access
-    # read -p $'\e[1;35m[Press Enter to continue]\e[0m'
 
 echo -e "\033[1;35m>>> Paste asoundrc configuration \033[00m"
     asoundrc="pcm.pulse {
@@ -160,28 +152,24 @@ echo -e "\033[1;35m>>> Paste asoundrc configuration \033[00m"
     ctl.default pulse
     "
     sudo echo "$asoundrc" > /etc/asound.conf
-    sudo echo "$asoundrc" > ~/.asoundrc
-    # read -p $'\e[1;35m[Press Enter to continue]\e[0m'
+    sudo echo "$asoundrc" > /home/pi/.asoundrc
 
 echo -e "\033[1;35m>>> Check that selected mode is a2dp_sink \033[00m"
     pactl list
-    # read -p $'\e[1;35m[Press Enter to continue]\e[0m'
 
 echo -e "\033[1;35m>>> Create simultaneous audio output \033[00m"
     pactl load-module module-combine-sink
     pulseaudio --start
-    # read -p $'\e[1;35m[Press Enter to continue]\e[0m'
 
 echo -e "\033[1;35m>>> Download an audio sample \033[00m"
     wget "https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_1MG.mp3"
-    mv file_example_MP3_1MG.mp3 $HOME/music.mp3
-    # read -p $'\e[1;35m[Press Enter to continue]\e[0m'
+    mv file_example_MP3_1MG.mp3 /home/pi/music.mp3
 
 echo -e "\033[1;35m>>> Install Python dependencies \033[00m"
     sudo apt-get install -y python3-pip
     sudo apt-get install -y libcairo2-dev
     pip3 install flask Flask-JSON python-dotenv
-    echo 'export PATH="/$HOME/.local/bin:$PATH"' >> ~/.bashrc
+    echo 'export PATH="/home/pi/.local/bin:$PATH"' >> /home/pi/.bashrc
 
 echo -e "\033[1;35m>>> Install cairo \033[00m"
     sudo apt-get install -y libcairo2-dev
