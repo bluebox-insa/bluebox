@@ -1,6 +1,7 @@
-from flask import Flask
+from flask import Flask,request
 from flask_json import FlaskJSON, JsonError, json_response, as_json
 from bluetool.bluetool import Bluetooth
+
 
 app = Flask(__name__)
 FlaskJSON(app)
@@ -90,8 +91,10 @@ def get_disconnect(mac_addr):
 def get_play():
     from subprocess import Popen
     try:
-        command="/usr/bin/cvlc -A pulse --intf http --http-host "+argv[1] +" --http-password cookie /home/pi/music.mp3"
+        hostIpAddress=request.host.split(':')[0]
+        command="/usr/bin/cvlc -A pulse --intf http --http-host "+ hostIpAddress +" --http-password cookie /home/pi/music.mp3"
         Popen(command.split(" "), stdout=None)
+
         return True
     except Exception as e:
         print(f"Exception at {current_func()}: {e}")
