@@ -6,7 +6,8 @@ from bluetool.bluetool import Bluetooth
 app = Flask(__name__)
 FlaskJSON(app)
 bluetooth = Bluetooth()
-
+adapters  = bluetooth.list_interfaces()
+connected_device_number=0
 @app.route('/')
 def hello():
     return 'Hello, World!'
@@ -48,11 +49,24 @@ def get_trust(mac_addr):
 @app.route('/connect/<mac_addr>', methods=["GET", "PUT"])
 @as_json
 def get_connect(mac_addr):
+    nb_connectedDevices=len(bluetooth.get_connected_devices())
+    if nb_connectedDevices==0:
+        connectMyDevice(mac_addr,interface_nb=1)
+        return ("connect.... ok",200)
+    elif nb_connectedDevices == 1:
+        connectMyDevice(mac_addr,interface_nb=0)
+        return ("connect.... ok",200)
+    else:
+        return ("too many bluetooth devices.... failed", 500)
+    
+
+''' def get_connect(mac_addr):
     inArrayC = False
     for i in bluetooth.get_connected_devices():
         print("value: " + str(i.values()))
         if mac_addr.encode() in i.values():
             inArrayC = True
+            
     inArrayPaired = False
     for i in bluetooth.get_paired_devices():
         print("value: " + str(i.values()))
@@ -69,7 +83,7 @@ def get_connect(mac_addr):
             isConnected = bluetooth.connect(mac_addr)
             return ("pair.... ok<br>connect.... ok", 200 if isConnected else 500)
         else:
-            return ("pair.... failed", 500)
+            return ("pair.... failed", 500) '''
 
 @app.route('/disconnect/<mac_addr>', methods=["GET", "PUT"])
 @as_json
@@ -114,6 +128,29 @@ def get_controllers():
 
     elif request.method == "PUT":
         pass
+
+def connectMyDevice(mac_addr,interface_nb):
+    if isDeviceAlreadyConnected(mac_addr):
+        pass
+    elif isDeviceAlreadyPaired(mac_addr):
+        bluetooth.connect(address=mac_addr, adapter_idx=interface_nb)
+    else:
+        bluetooth.pair(address=mac_addr, adapter_idx=interface_nb)
+        bluetooth.connect(address=mac_addr, adapter_idx=interface_nb)
+
+def isDeviceAlreadyConnected(mac_addr):
+    for i in bluetooth.get_connected_devices():
+        print("value: " + str(i.values()))
+        if mac_addr.encode() in i.values():
+            return True
+    return False
+
+def isDeviceAlreadyPaired(mac_addr):
+    for i in bluetooth.get_paired_devices():
+        print("value: " + str(i.values()))
+        if mac_addr.encode() in i.values():
+            return True
+    return False
 
 if __name__ == '__main__':
     from sys import argv
