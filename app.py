@@ -90,7 +90,8 @@ def get_disconnect(mac_addr):
 def get_play():
     from subprocess import Popen
     try:
-        Popen("/usr/bin/cvlc -A pulse --intf http --http-host 192.168.0.142 --http-password cookie /home/pi/music.mp3".split(" "), stdout=None)
+        command="/usr/bin/cvlc -A pulse --intf http --http-host "+argv[1] +" --http-password cookie /home/pi/music.mp3"
+        Popen(command.split(" "), stdout=None)
         return True
     except Exception as e:
         print(f"Exception at {current_func()}: {e}")
