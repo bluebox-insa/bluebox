@@ -1,13 +1,15 @@
 from flask import Flask,request
 from flask_json import FlaskJSON, JsonError, json_response, as_json
 from bluetool.bluetool import Bluetooth
-
+import subprocess
 
 app = Flask(__name__)
 FlaskJSON(app)
 bluetooth = Bluetooth()
 adapters  = bluetooth.list_interfaces()
-connected_device_number=0
+nb_bt_controller=2
+controller_list=getBtControllerMacAddr()
+
 @app.route('/')
 def hello():
     return 'Hello, World!'
@@ -52,10 +54,10 @@ def get_connect(mac_addr):
     nb_connectedDevices=len(bluetooth.get_connected_devices())
     print("number of connnected device = ",nb_connectedDevices)
     if nb_connectedDevices==0:
-        connectMyDevice(mac_addr,interface_nb=1)
+        connectBluetoothDevice(mac_addr,interface_nb=1)
         return ("connect.... ok",200)
     elif nb_connectedDevices == 1:
-        connectMyDevice(mac_addr,interface_nb=0)
+        connectBluetoothDevice(mac_addr,interface_nb=0)
         return ("connect.... ok",200)
     else:
         return ("too many bluetooth devices.... failed", 500)
@@ -109,6 +111,7 @@ def get_play():
         hostIpAddress=request.host.split(':')[0]
         command="/usr/bin/cvlc -A pulse --intf http --http-host "+ hostIpAddress +" --http-password cookie /home/pi/music.mp3"
         Popen(command.split(" "), stdout=None)
+        
 
         return True
     except Exception as e:
@@ -130,18 +133,29 @@ def get_controllers():
     elif request.method == "PUT":
         pass
 
-def connectMyDevice(mac_addr,interface_nb):
-    print(bluetooth.pair(address=mac_addr, adapter_idx=interface_nb))
-    print(bluetooth.connect(address=mac_addr, adapter_idx=interface_nb))
-    '''
-    if isDeviceAlreadyConnected(mac_addr):
-        pass
-    elif isDeviceAlreadyPaired(mac_addr):
-        bluetooth.connect(address=mac_addr, adapter_idx=interface_nb)
-    else:
-        bluetooth.pair(address=mac_addr, adapter_idx=interface_nb)
-        bluetooth.connect(address=mac_addr, adapter_idx=interface_nb)
-    '''
+
+
+
+def getBtControllerMacAddr():
+    command='hcitool dev | grep -o \"[[:xdigit:]:]\{11,17\}\"'
+    mac_controller_addr=subprocess.check_output(command, shell=True)
+    controller_list=mac_controller_addr.split('\n')[0:nb_bt_controller]
+    print("my controller list is : "+controller_list )
+    return controller_list
+
+def connectBluetoothDevice(mac_addr,interface_nb):
+    process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    process.stdin.write('select '+controller_list[interface_nb]+'\n')
+    process.stdin.flush()
+    process.stdin.write('pair '+ mac_addr+'\n')
+    process.stdin.flush()
+    process.stdin.write('connect '+ mac_addr+'\n')
+    process.stdin.flush()
+    process.stdin.write('exit\n')
+    process.stdin.flush()
+    output, errors = process.communicate()
+    #print(output.decode())
+
 
 def isDeviceAlreadyConnected(mac_addr):
     for i in bluetooth.get_connected_devices():
