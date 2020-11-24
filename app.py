@@ -50,6 +50,7 @@ def get_trust(mac_addr):
 @as_json
 def get_connect(mac_addr):
     nb_connectedDevices=len(bluetooth.get_connected_devices())
+    print("number of connnected device = ",nb_connectedDevices)
     if nb_connectedDevices==0:
         connectMyDevice(mac_addr,interface_nb=1)
         return ("connect.... ok",200)
@@ -130,6 +131,9 @@ def get_controllers():
         pass
 
 def connectMyDevice(mac_addr,interface_nb):
+    print(bluetooth.pair(address=mac_addr, adapter_idx=interface_nb))
+    print(bluetooth.connect(address=mac_addr, adapter_idx=interface_nb))
+    '''
     if isDeviceAlreadyConnected(mac_addr):
         pass
     elif isDeviceAlreadyPaired(mac_addr):
@@ -137,6 +141,7 @@ def connectMyDevice(mac_addr,interface_nb):
     else:
         bluetooth.pair(address=mac_addr, adapter_idx=interface_nb)
         bluetooth.connect(address=mac_addr, adapter_idx=interface_nb)
+    '''
 
 def isDeviceAlreadyConnected(mac_addr):
     for i in bluetooth.get_connected_devices():
