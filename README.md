@@ -32,3 +32,9 @@ IP_ADDR="$(hostname -I | cut -d ' ' -f 1)"
 echo $IP_ADDR
 flask run --host $IP_ADDR
 ```
+## Launch at startup (or after reboot) 🐍
+```bash
+# run
+cd ~/innotech-mvp
+./init.sh
+```
