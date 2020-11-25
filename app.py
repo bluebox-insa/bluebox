@@ -14,7 +14,7 @@ def getBtControllerMacAddr():
     command='hcitool dev | grep -o \"[[:xdigit:]:]\{11,17\}\"'
     mac_controller_addr=subprocess.check_output(command, shell=True).decode()
     controller_list=mac_controller_addr.split('\n')[0:nb_bt_controller]
-    print('my controller_list is ',controller_list[0])
+    print('my controller_list is ',controller_list)
     return controller_list
 
 #il faudrait pouvoir activer le scan sur la deuxieme interface aussi sinon pas possible de connecter la deuxieme enceinte
@@ -84,6 +84,7 @@ def get_connect(mac_addr):
         return ("connect.... ok",200)
     elif nb_connectedDevices == 1:
         connectBluetoothDevice(mac_addr,interface_nb=1)
+
         return ("connect.... ok",200)
     else:
         return ("too many bluetooth devices.... failed", 500)
@@ -167,13 +168,19 @@ def connectBluetoothDevice(mac_addr,interface_nb):
     process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,text=True)
     process.stdin.write("select "+controller_list[interface_nb]+"\n")
     process.stdin.flush()
+    time.sleep(2)
+    process.stdin.write("scan on\n")
+    process.stdin.flush()
+    time.sleep(5)
+    process.stdin.write("scan off\n")
+    process.stdin.flush()
     time.sleep(1)
     process.stdin.write('pair '+ mac_addr+'\n')
     process.stdin.flush()
     time.sleep(1)
     process.stdin.write('connect '+ mac_addr+'\n')
     process.stdin.flush()
-    time.sleep(2)
+    time.sleep(4)
     process.stdin.write('exit\n')
     process.stdin.flush()
     time.sleep(1)
