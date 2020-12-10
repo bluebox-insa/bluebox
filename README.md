@@ -12,18 +12,17 @@ Turn your **Raspberry Pi** into a **Bluetooth hub** to play your music through m
 - 2 speakers :
     - 1 in bluetooth mode
     - 1 in AUX mode (connected with JACK cable to the headphone output of the Raspberry)
-    ![architecture](./installation/architecture.png)
+    ![architecture](./installation/images/architecture.png)
 
 ## Run from a fresh Raspberry install 🐍
 ```bash
-# install innotech-mvp
-git clone https://github.com/innotech-insa/innotech-mvp.git
-sudo ./innotech-mvp/installation/install.sh
+# install bluebox server and bluetool
+git clone https://github.com/bluebox-insa/bluebox.git
+sudo ~/bluebox/installation/install.sh
 source ~/.bashrc
-# install bluetool
-git clone https://github.com/innotech-insa/bluetool.git
-cd bluetool && sudo make install
-# run
-cd ~/innotech-mvp
-flask run --host "$(hostname -I | cut -d ' ' -f 1)"
+git clone https://github.com/bluebox-insa/bluetool.git
+cd bluetool && sudo make install && cd ~
+
+# to run the server, relaunch init.sh
+sudo ~/bluebox/init.sh
 ```
