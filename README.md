@@ -16,19 +16,14 @@ Turn your **Raspberry Pi** into a **Bluetooth hub** to play your music through m
 
 ## Run from a fresh Raspberry install 🐍
 ```bash
-# base configuration
+# install innotech-mvp
 git clone https://github.com/innotech-insa/innotech-mvp.git
-cd innotech-mvp/installation
-sudo ./install.sh
+sudo ./innotech-mvp/installation/install.sh
 source ~/.bashrc
 # install bluetool
-cd ~
 git clone https://github.com/innotech-insa/bluetool.git
-cd bluetool
-sudo make install
+cd bluetool && sudo make install
 # run
 cd ~/innotech-mvp
-IP_ADDR="$(hostname -I | cut -d ' ' -f 1)"
-echo $IP_ADDR
-flask run --host $IP_ADDR
+flask run --host "$(hostname -I | cut -d ' ' -f 1)"
 ```

@@ -112,7 +112,6 @@ echo -e "\033[1;35m>>> Paste various configurations (bashrc, gitconfig, vimrc, .
     nnoremap :: :%s///g<Left><Left>
     '
     echo "$bashrc" >> /home/pi/.bashrc
-    echo "$bashrc" >> /home/pi/.bashrc
     echo "$gitconfig" > /home/pi/.gitconfig
     echo "$vimrc" > /home/pi/.vimrc
     echo "$inputrc" > /home/pi/.inputrc
@@ -154,25 +153,27 @@ echo -e "\033[1;35m>>> Paste asoundrc configuration \033[00m"
     sudo echo "$asoundrc" > /etc/asound.conf
     sudo echo "$asoundrc" > /home/pi/.asoundrc
 
-echo -e "\033[1;35m>>> Check that selected mode is a2dp_sink \033[00m"
-    pactl list
+# echo -e "\033[1;35m>>> Check that selected mode is a2dp_sink \033[00m"
+#     pactl list
 
-echo -e "\033[1;35m>>> Create simultaneous audio output \033[00m"
-    pactl load-module module-combine-sink
-    pulseaudio --start
+# echo -e "\033[1;35m>>> Create simultaneous audio output \033[00m"
+#     pactl load-module module-combine-sink
+#     pulseaudio --start
+
+echo -e "\033[1;35m>>> Install vlc \033[00m"
+    sudo apt-get install -y vlc
 
 echo -e "\033[1;35m>>> Download an audio sample \033[00m"
     wget "https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_1MG.mp3"
     mv file_example_MP3_1MG.mp3 /home/pi/music.mp3
 
-echo -e "\033[1;35m>>> Install Python dependencies \033[00m"
+echo -e "\033[1;35m>>> Install Python dependencies\033[00m"
     sudo apt-get install -y python3-pip
     sudo apt-get install -y libcairo2-dev
     pip3 install flask Flask-JSON python-dotenv
     echo 'export PATH="/home/pi/.local/bin:$PATH"' >> /home/pi/.bashrc
 
-echo -e "\033[1;35m>>> Install cairo \033[00m"
+echo -e "\033[1;35m>>> Install cairo for bluetool \033[00m"
     sudo apt-get install -y libcairo2-dev
 
-echo -e "\033[1;35m>>> Install vlc \033[00m"
-    sudo apt-get install -y vlc
+echo -e "\033[1;35m>>> Installation success: you can go on to the next step \033[00m"
