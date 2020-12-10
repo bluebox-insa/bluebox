@@ -1,11 +1,9 @@
-#from bluetool import Bluetooth
-import subprocess
-#bluetooth = Bluetooth()
-result = subprocess.run(['ls', '-l'], stdout=subprocess.PIPE)
-print(result.stdout.decode('utf-8'))
+from bluetool import Bluetooth
+
+bluetooth = Bluetooth()
 
 
-'''
+
 print("---------------------------------")
 
 ADDR_BOSE_REVOLVE = '2C:41:A1:97:16:0C'
@@ -20,4 +18,3 @@ print(bluetooth.pair(address=ADDR_BOSE_SOUNDLINK, adapter_idx=0))
 print(bluetooth.connect(address=ADDR_BOSE_SOUNDLINK, adapter_idx=0))
 
 print(bluetooth.get_connected_devices())
-'''
