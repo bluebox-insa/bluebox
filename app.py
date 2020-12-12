@@ -7,13 +7,7 @@ from flask import Flask,request
 from flask_json import FlaskJSON, JsonError, json_response, as_json
 from bluetool.bluetool import Bluetooth
 
-
-def get_controllers():
-    command         = 'hcitool dev | grep -o \"[[:xdigit:]:]\{11,17\}\"'
-    controllers_str = subprocess.check_output(command, shell=True).decode()
-    controllers     = controllers_str.split('\n')
-    return controllers
-
+# global vars
 logging.basicConfig(level = logging.DEBUG)
 logger                    = logging.getLogger(__name__)
 app                       = Flask(__name__)
@@ -22,7 +16,7 @@ bluetooth                 = Bluetooth()
 controllers               = subprocess.check_output('hcitool dev | grep -o \"[[:xdigit:]:]\{11,17\}\"', shell=True).decode().split('\n')[:-1]
 controllers.reverse()
 currentControllerIndex    = 1
-
+devicesRecord             = {}
 
 ################################
 #         ROUTES
@@ -45,12 +39,12 @@ def get_connected_bluetooth_devices():
     return devices
 
 @app.route('/connect_in/<mac_addr>')
-@as_json
 def connect_input_device(mac_addr):
+    global controller, controllerIndex, devicesRecord
+
     if isMacAddrInDevices(mac_addr, bluetooth.get_connected_devices()):
         return "device already connected", 200
 
-    global controllerIndex, devicesRecord
     process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
     logger.debug(f"select controllers[0] = {controllers[0]}\n")
@@ -99,8 +93,9 @@ def connect_input_device(mac_addr):
 
 
 @app.route('/connect_out/<mac_addr>')
-@as_json
 def connect_output_device(mac_addr):
+    global controller, controllerIndex, devicesRecord
+
     process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
     logger.debug(f"select {controllers[currentControllerIndex]}\n")
@@ -141,8 +136,9 @@ def connect_output_device(mac_addr):
         return "erreur", 500
 
 @app.route('/reset_in')
-@as_json
 def reset_input_device():
+    global controller, controllerIndex, devicesRecord
+
     process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
     ret = ""
 
@@ -170,8 +166,9 @@ def reset_input_device():
 
 
 @app.route('/reset_out')
-@as_json
 def reset_output_device():
+    global controller, controllerIndex, devicesRecord
+
     process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
     ret = ""
 
