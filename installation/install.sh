@@ -32,7 +32,7 @@ alias st='git status'
 export LS_COLORS='no=00:fi=00:rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.cmd=01;32:*.exe=01;32:*.com=01;32:*.btm=01;32:*.bat=01;32:*.sh=01;32:*.csh=01;32:*.out=01;32:*.class=01;32:*.c=00;31:*.cpp=00;31:*.java=00;33:*.py=00;33:*.html=00;36:*.css=00;32:*.php=00;35:*.js=00;35:*.tar=01;31:*.tgz=01;31:*.taz=01;31:*.tlz=01;31:*.txz=01;31:*.t7z=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.xz=01;31:*.bz2=01;31:*.bz=01;31:*.rar=01;31:*.7z=01;31:*.rz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.wmv=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.wav=00;36:'
 "
 
-gitconfig="#-----------------------------------------------------------
+    gitconfig="#-----------------------------------------------------------
 # INNOTECH-MVP gitconfig template
 #-----------------------------------------------------------
 [color]
@@ -62,10 +62,10 @@ gitconfig="#-----------------------------------------------------------
     editor = vim
 "
 
-inputrc="set bell-style none
+    inputrc="set bell-style none
 "
 
-vimrc='"-----------------------------------------------------------
+    vimrc='"-----------------------------------------------------------
 " INNOTECH-MVP vimrc template
 "-----------------------------------------------------------
 
@@ -112,25 +112,33 @@ nnoremap ;; :q<CR>
 nnoremap ,; :x<CR>
 nnoremap :: :%s///g<Left><Left>
 '
+
     echo "$bashrc" >> /home/pi/.bashrc
     echo "$gitconfig" > /home/pi/.gitconfig
     echo "$vimrc" > /home/pi/.vimrc
+    echo "$vimrc" > /root/.vimrc
     echo "$inputrc" > /home/pi/.inputrc
 
 echo -e "\033[1;35m>>> Make sure everything is up to date \033[00m"
-    sudo apt-get install -y vim
     sudo apt-get remove -y chromium-browser chromium-browser-l10n chromium-codecs-ffmpeg-extra
     sudo apt-mark hold raspberrypi-kernel raspberrypi-bootloader
     sudo apt-get update
     sudo apt-get upgrade -y
     sudo apt-get autoremove -y
+    sudo apt-get install -y vim vlc
 
-echo -e "\033[1;35m>>> Make sure that bluealsa is not installed to avoid potential conflicts \033[00m"
+echo -e "\033[1;35m>>> Remove bluealsa to avoid potential conflicts \033[00m"
     sudo apt-get remove -y bluealsa
 
 echo -e "\033[1;35m>>> Install and launch pulseaudio \033[00m"
     sudo apt-get install -y pulseaudio pulseaudio-module-bluetooth
     pulseaudio --start
+    pulseaudio_conf='
+load-module module-combine-sink sink_name=bluebox_combined
+set-default-sink bluebox_combined
+'
+    #sudo echo "$pulseaudio_conf" > /etc/pulse/default.pa
+    # sudo systemctl enable pulseaudio
 
 echo -e "\033[1;35m>>> Add users to user groups (This is not necessary but will be if we want to turn pulseaudio into a service) \033[00m"
     sudo adduser pi audio
@@ -161,12 +169,9 @@ echo -e "\033[1;35m>>> Paste asoundrc configuration \033[00m"
 #     pactl load-module module-combine-sink
 #     pulseaudio --start
 
-echo -e "\033[1;35m>>> Install vlc \033[00m"
-    sudo apt-get install -y vlc
-
-echo -e "\033[1;35m>>> Download an audio sample \033[00m"
-    wget "https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_1MG.mp3"
-    mv file_example_MP3_1MG.mp3 /home/pi/music.mp3
+#echo -e "\033[1;35m>>> Download an audio sample \033[00m"
+#    wget "https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_1MG.mp3"
+#    mv file_example_MP3_1MG.mp3 /home/pi/music.mp3
 
 echo -e "\033[1;35m>>> Install Python dependencies\033[00m"
     sudo apt-get install -y python3-pip
@@ -176,5 +181,17 @@ echo -e "\033[1;35m>>> Install Python dependencies\033[00m"
 
 echo -e "\033[1;35m>>> Install cairo for bluetool \033[00m"
     sudo apt-get install -y libcairo2-dev
+
+echo -e "\033[1;35m>>> Install supervisor and paste configuration \033[00m"
+    sudo apt-get install -y supervisor
+    supervisord_conf='[program:bluebox_server]
+command = /home/pi/bluebox/app.py
+autostart = true
+autorestart = true
+
+[program:create_bluetooth_sink]
+command = /bin/hciconfig hci0 class 0x200420
+'
+    # sudo echo "$supervisord_conf" >> /etc/supervisor/supervisord.conf
 
 echo -e "\033[1;35m>>> Installation success: you can go on to the next step \033[00m"
