@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import subprocess
 import time
 import logging
@@ -6,6 +7,12 @@ from flask_json import FlaskJSON, JsonError, json_response, as_json
 from bluetool.bluetool import Bluetooth
 
 
+def get_controllers():
+    command         = 'hcitool dev | grep -o \"[[:xdigit:]:]\{11,17\}\"'
+    controllers_str = subprocess.check_output(command, shell=True).decode()
+    controllers     = controllers_str.split('\n')
+    return controllers
+
 logging.basicConfig(level = logging.DEBUG)
 logger                    = logging.getLogger(__name__)
 app                       = Flask(__name__)
@@ -13,12 +20,6 @@ FlaskJSON(app)
 bluetooth                 = Bluetooth()
 controllers               = get_controllers()
 currentControllerIndex    = 1
-
-def get_controllers():
-    command         = 'hcitool dev | grep -o \"[[:xdigit:]:]\{11,17\}\"'
-    controllers_str = subprocess.check_output(command, shell=True).decode()
-    controllers     = controllers_str.split('\n')
-    return controllers
 
 
 ################################
@@ -147,6 +148,10 @@ def get_play():
         return f"Exception at {current_func()}: {e}", 500
 
 
+# launch as ./app.py
 if __name__ == '__main__':
     from sys import argv
-    app.run(host=argv[1]) if argv[1] else app.run(host="192.168.0.137")
+    app.run(host=argv[1]) if len(argv)>1 else app.run(host="10.3.141.1")
+
+# or launch with
+# flask run --host "$(hostname -I | cut -d ' ' -f 1)"
