@@ -133,12 +133,16 @@ echo -e "\033[1;35m>>> Remove bluealsa to avoid potential conflicts \033[00m"
 echo -e "\033[1;35m>>> Install and launch pulseaudio \033[00m"
     sudo apt-get install -y pulseaudio pulseaudio-module-bluetooth
     pulseaudio --start
+
     pulseaudio_conf='
 load-module module-combine-sink sink_name=bluebox_combined
 set-default-sink bluebox_combined
 '
-    #sudo echo "$pulseaudio_conf" > /etc/pulse/default.pa
-    # sudo systemctl enable pulseaudio
+    #sudo echo "$pulseaudio_conf" >> /etc/pulse/default.pa
+    # systemctl --user status pulseaudio
+    # systemctl --user enable pulseaudio
+    # installer ofono pour ne plus avoir d'erreurs lors d'un systemctlstatus pulseaudio
+    # sudo apt-get install -y ofono
 
 echo -e "\033[1;35m>>> Add users to user groups (This is not necessary but will be if we want to turn pulseaudio into a service) \033[00m"
     sudo adduser pi audio
