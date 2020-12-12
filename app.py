@@ -5,17 +5,20 @@ import time
 import logging
 from flask import Flask,request
 from flask_json import FlaskJSON, JsonError, json_response, as_json
+logging.getLogger("bluetool").setLevel(logging.WARNING)
+# logging.getLogger("werkzeug").setLevel(logging.ERROR)
 from bluetool.bluetool import Bluetooth
 
 # global vars
-logging.basicConfig(level = logging.DEBUG)
+logging.basicConfig(level = logging.INFO)
 logger                    = logging.getLogger(__name__)
 app                       = Flask(__name__)
 FlaskJSON(app)
 bluetooth                 = Bluetooth()
 controllers               = subprocess.check_output('hcitool dev | grep -o \"[[:xdigit:]:]\{11,17\}\"', shell=True).decode().split('\n')[:-1]
 controllers.reverse()
-currentControllerIndex    = 1
+
+controllerIndex    = 1
 devicesRecord             = {}
 
 ################################
@@ -47,14 +50,14 @@ def connect_input_device(mac_addr):
 
     process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
-    logger.debug(f"select controllers[0] = {controllers[0]}\n")
+    logger.info(f"select controllers[0] = {controllers[0]}\n")
     process.stdin.write(f"select {controllers[0]}\n")
     process.stdin.flush()
 
     # disconnect device if it is already connected
     if 0 in devicesRecord.keys():
-        logger.debug(f"controllers[0] is already connected to {devicesRecord[0]}")
-        logger.debug(f"disconnect {devicesRecord[0]}")
+        logger.info(f"controllers[0] is already connected to {devicesRecord[0]}")
+        logger.info(f"disconnect {devicesRecord[0]}")
         process.stdin.write(f"disconnect {devicesRecord[0]}")
         process.stdin.flush()
         time.sleep(5)
@@ -64,7 +67,7 @@ def connect_input_device(mac_addr):
         process.stdin.flush()
         time.sleep(2)
 
-        logger.debug(f"pair {mac_addr}\n")
+        logger.info(f"pair {mac_addr}\n")
         process.stdin.write(f"pair {mac_addr}\n")
         process.stdin.flush()
         time.sleep(7)
@@ -72,12 +75,12 @@ def connect_input_device(mac_addr):
         process.stdin.flush()
         time.sleep(3)
     else:
-        logger.debug(f"scan on\n")
+        logger.info(f"scan on\n")
         process.stdin.write(f"scan on\n")
         process.stdin.flush()
         time.sleep(4)
 
-    logger.debug(f"connect {mac_addr}\n")
+    logger.info(f"connect {mac_addr}\n")
     process.stdin.write(f"connect {mac_addr}\n")
     process.stdin.flush()
     time.sleep(4)
@@ -98,14 +101,14 @@ def connect_output_device(mac_addr):
 
     process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
-    logger.debug(f"select {controllers[currentControllerIndex]}\n")
-    process.stdin.write(f"select {controllers[currentControllerIndex]}\n")
+    logger.info(f"select {controllers[controllerIndex]}\n")
+    process.stdin.write(f"select {controllers[controllerIndex]}\n")
     process.stdin.flush()
 
-    logger.debug(f"is {controllerIndex} in {devicesRecord.keys()} : {controllerIndex in devicesRecord.keys()}")
+    logger.info(f"is {controllerIndex} in {devicesRecord.keys()} : {controllerIndex in devicesRecord.keys()}")
     if controllerIndex in devicesRecord.keys():
-        logger.debug(f"controllers[{controllerIndex}] is already connected to {devicesRecord[controllerIndex]}")
-        logger.debug(f"disconnect {devicesRecord[controllerIndex]}")
+        logger.info(f"controllers[{controllerIndex}] is already connected to {devicesRecord[controllerIndex]}")
+        logger.info(f"disconnect {devicesRecord[controllerIndex]}")
         process.stdin.write(f"disconnect {devicesRecord[controllerIndex]}")
         process.stdin.flush()
         time.sleep(5)
@@ -115,22 +118,21 @@ def connect_output_device(mac_addr):
     time.sleep(3)
 
     if not isMacAddrInDevices(mac_addr, bluetooth.get_paired_devices()):
-        logger.debug(f"pair {mac_addr}\n")
+        logger.info(f"pair {mac_addr}\n")
         process.stdin.write(f"pair {mac_addr}\n")
         process.stdin.flush()
         time.sleep(6)
 
-    logger.debug(f"connect {mac_addr}\n")
+    logger.info(f"connect {mac_addr}\n")
     process.stdin.write(f"connect {mac_addr}\n")
     process.stdin.flush()
     time.sleep(4)
 
-    subprocess.Popen(f"/usr/bin/cvlc -A pulse --intf http --http-host {hostIpAddress} --http-password cookie /home/pi/music.mp3".split(" "), stdout=None)
-    
     if isMacAddrInDevices(mac_addr, bluetooth.get_connected_devices()):
         devicesRecord[controllerIndex] = mac_addr
         controllerIndex += 1
-        logger.debug(f"controllerIndex set to {controllerIndex}")
+        logger.info(f"controllerIndex set to {controllerIndex}")
+        beep()
         return "ok", 200
     else:
         return "erreur", 500
@@ -138,6 +140,10 @@ def connect_output_device(mac_addr):
 @app.route('/reset_in')
 def reset_input_device():
     global controller, controllerIndex, devicesRecord
+
+    # input device is already disconnected
+    if 0 not in devicesRecord.keys():
+        return "ok", 200
 
     process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
     ret = ""
@@ -160,6 +166,7 @@ def reset_input_device():
     print(out)
 
     if devicesRecord[0] not in bluetooth.get_connected_devices():
+        devicesRecord.pop(0)
         return ret, 200
     else:
         return "erreur", 500
@@ -169,34 +176,49 @@ def reset_input_device():
 def reset_output_device():
     global controller, controllerIndex, devicesRecord
 
+
     process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
     ret = ""
 
-    input_device = deviceRecord[0]
-    for c in controllers[1:].keys():
-        ret += f"select {controllers[0]}\n"
-        process.stdin.write(f"select {controllers[0]}\n")
+    input_device = devicesRecord[0]
+    for c in controllers[1:]:
+        logger.debug(f"select {c}")
+        ret += f"select {c}\n"
+        process.stdin.write(f"select {c}\n")
         process.stdin.flush()
 
         for d in bluetooth.get_connected_devices():
+            d = d["mac_address"].decode()
             if d != input_device:
                 #if request.args.get('hard'):
+                logger.debug(f"disconnect {d}")
                 ret += f"disconnect {d}\n"
                 process.stdin.write(f"disconnect {d}\n")
+                process.stdin.flush()
+                time.sleep(1)
                 #else:
                 #    ret += f"remove {devicesRecord[0]}\n"
                 #    process.stdin.write(f"remove {devicesRecord[0]}\n")
 
-    process.stdin.flush()
-    time.sleep(1)
 
     out, err = process.communicate()
     print(out)
 
-    if len(bluetooth.get_connected_devices()) == 0:
+    still_connected = bluetooth.get_connected_devices()
+    if len(still_connected) == 1 and isMacAddrInDevices(input_device, still_connected):
         return "ok", 200
     else:
         return "erreur", 500
+
+def isMacAddrInDevices(mac_addr, devices):
+    for d in devices:
+        if mac_addr.encode() in d.values():
+            return True
+    return False
+
+def beep():
+    subprocess.Popen(f"(cvlc /home/pi/bluebox/beep_6sec.wav &) >/dev/null 2>&1", shell=True)
+
 
 # launch as ./app.py
 if __name__ == '__main__':
