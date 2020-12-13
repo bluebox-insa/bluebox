@@ -53,7 +53,7 @@ The Bluebox may not work properly if an audio cable is wired in when it boots.
 #---------------------------
 import subprocess, logging
 logging.getLogger("bluetool").setLevel(logging.WARNING)
-logging.getLogger("werkzeug").setLevel(logging.WARNING)
+logging.getLogger("werkzeug").setLevel(logging.INFO)
 from time import sleep
 
 from flask import Flask, request
@@ -107,9 +107,14 @@ def refresh_controllers_before_request():
     Raises: <none>
     """
     global controllers
+
+    logger.info("%s %s" % (request.method, request.endpoint))
+
+    old_controllers = controllers
     controllers = subprocess.check_output('hcitool dev | grep -o \"[[:xdigit:]:]\{11,17\}\"', shell=True).decode().split('\n')[:-1]
     controllers.reverse()
-    logger.info(f"before_request: controllers set to {controllers}")
+    if controllers != old_controllers:
+        logger.info(f"controllers updated to {controllers}")
 
 
 @app.route('/')
