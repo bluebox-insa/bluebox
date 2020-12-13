@@ -32,6 +32,18 @@ Usage:
         - reception on the output devices on interfaces 88:C6:26:EE:BC:FE, 30:21:15:54:78:AA, 00:1A:7D:DA:71:13
 
        Once this configuration has been established, the audio streams rely solely on the Bluetooth controllers and PulseAudio.
+
+
+In order to verify the proper Bluetooth and PulseAudio configuration, these commands could be executed:
+This configuration is erased at shutdown and rewrittent at boot, it is therefore important to verify it.
+
+    # verify that the bluetooth controller /dev/hci0 has been set to sink audio mode
+    check_output("hciconfig hci0 class | grep -q 0x200420", shell=True)
+
+    # verify that the combined sink
+    check_output("pactl list sinks | grep -q bluebox_combined", shell=True)
+
+The Bluebox may not work properly if an audio cable is wired in when it boots.
 """
 
 
@@ -113,6 +125,7 @@ def scan_for_bluetooth_devices():
     found_devices = bluetooth.get_available_devices()
     return found_devices
 
+
 @app.route('/devices')
 @as_json
 def get_connected_bluetooth_devices():
@@ -136,6 +149,7 @@ def get_connected_bluetooth_devices():
     """
     found_devices = bluetooth.get_connected_devices()
     return found_devices
+
 
 @app.route('/connect_in/<mac_addr>')
 def connect_input_device(mac_addr):
@@ -295,7 +309,7 @@ def connect_output_device(mac_addr):
 
 
 @app.route('/reset_in')
-def reset_input_device():
+def reset_input_device(a):
     """ reset_input_device
 
     Disconnect / remove the input device i.e. /dev/hci0
@@ -354,7 +368,7 @@ def reset_output_device():
 
     Disconnect or remove all output devices i.e. /dev/hci1, /dev/hci2, /dev/hci3,...
     without disconneting the input device.
-    
+
     Args: <none>
 
     Returns:
@@ -406,6 +420,22 @@ def reset_output_device():
         return response, 500
 
 
+@app.route('/beep')
+def beep():
+    """ beep
+
+    Opens a vlc subprocess for playing a beep audio file.
+    This is used as a confirmation that a Bluetooth device has be properly connected.
+
+    Args: <none>
+
+    Returns: <none>
+
+    Raises: <none>
+    """
+    subprocess.Popen(f"(cvlc /home/pi/bluebox/beep/beep_6sec.wav &) >/dev/null 2>&1", shell=True)
+
+
 
 
 #------------------------------------
@@ -431,21 +461,6 @@ def isMacAddrInDevices(mac_addr, devices):
         if mac_addr.encode() in d.values():
             return True
     return False
-
-
-def beep():
-    """ beep
-
-    Opens a vlc subprocess for playing a beep audio file.
-    This is used as a confirmation that a Bluetooth device has be properly connected.
-
-    Args: <none>
-
-    Returns: <none>
-
-    Raises: <none>
-    """
-    subprocess.Popen(f"(cvlc /home/pi/bluebox/beep_6sec.wav &) >/dev/null 2>&1", shell=True)
 
 
 

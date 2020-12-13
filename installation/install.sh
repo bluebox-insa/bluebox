@@ -1,11 +1,20 @@
 #!/bin/bash
 
-set -e
-#set -ue -o pipefail
+set -euo pipefail
 
-echo -e "\033[1;35m>>> Paste various configurations (bashrc, gitconfig, vimrc, ...) and install vim \033[00m"
-    bashrc="#-----------------------------------------------------------
-# INNOTECH-MVP bashrc template
+if [[ `id -u` != 0 ]]; then
+    echo >&2 "You must be root to run this script"
+    exit 1
+fi
+
+log() {
+    set +x
+    echo -e "\033[1;32m\u25CF BlueBox Installer: $@ \033[00m"
+    set -x
+}
+
+bashrc="#-----------------------------------------------------------
+# BlueBox bashrc template
 #-----------------------------------------------------------
 alias ..='cd ..'
 alias ...='cd ../..'
@@ -31,9 +40,8 @@ alias st='git status'
 
 export LS_COLORS='no=00:fi=00:rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.cmd=01;32:*.exe=01;32:*.com=01;32:*.btm=01;32:*.bat=01;32:*.sh=01;32:*.csh=01;32:*.out=01;32:*.class=01;32:*.c=00;31:*.cpp=00;31:*.java=00;33:*.py=00;33:*.html=00;36:*.css=00;32:*.php=00;35:*.js=00;35:*.tar=01;31:*.tgz=01;31:*.taz=01;31:*.tlz=01;31:*.txz=01;31:*.t7z=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.xz=01;31:*.bz2=01;31:*.bz=01;31:*.rar=01;31:*.7z=01;31:*.rz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.wmv=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.wav=00;36:'
 "
-
-    gitconfig="#-----------------------------------------------------------
-# INNOTECH-MVP gitconfig template
+gitconfig="#-----------------------------------------------------------
+# BlueBox gitconfig template
 #-----------------------------------------------------------
 [color]
     diff   = auto
@@ -61,12 +69,8 @@ export LS_COLORS='no=00:fi=00:rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=
 [core]
     editor = vim
 "
-
-    inputrc="set bell-style none
-"
-
-    vimrc='"-----------------------------------------------------------
-" INNOTECH-MVP vimrc template
+vimrc='"-----------------------------------------------------------
+" BlueBox vimrc template
 "-----------------------------------------------------------
 
 " identation
@@ -112,46 +116,58 @@ nnoremap ;; :q<CR>
 nnoremap ,; :x<CR>
 nnoremap :: :%s///g<Left><Left>
 '
+inputrc="set bell-style none"
 
-    echo "$bashrc" >> /home/pi/.bashrc
-    echo "$gitconfig" > /home/pi/.gitconfig
-    echo "$vimrc" > /home/pi/.vimrc
-    echo "$vimrc" > /root/.vimrc
-    echo "$inputrc" > /home/pi/.inputrc
 
-echo -e "\033[1;35m>>> Make sure everything is up to date \033[00m"
-    sudo apt-get remove -y chromium-browser chromium-browser-l10n chromium-codecs-ffmpeg-extra
-    sudo apt-mark hold raspberrypi-kernel raspberrypi-bootloader
-    sudo apt-get update
-    sudo apt-get upgrade -y
-    sudo apt-get autoremove -y
-    sudo apt-get install -y vim vlc
 
-echo -e "\033[1;35m>>> Remove bluealsa to avoid potential conflicts \033[00m"
-    sudo apt-get remove -y bluealsa
+echo "BlueBox"
+echo -e "This quick Installer will guide you through a few easy steps\n"
 
-echo -e "\033[1;35m>>> Install and launch pulseaudio \033[00m"
-    sudo apt-get install -y pulseaudio pulseaudio-module-bluetooth
-    pulseaudio --start
 
+log "Appending to various configuration files (bashrc, gitconfig, vimrc, inputrc)"
+    echo "$bashrc"    >> /home/pi/.bashrc
+    echo "$gitconfig"  > /home/pi/.gitconfig
+    echo "$vimrc"      > /home/pi/.vimrc
+    echo "$vimrc"      > /root/.vimrc
+    echo "$inputrc"    > /home/pi/.inputrc
+
+
+log "Updating system packages (except chromium-browser and raspberrypi-kernel)"
+    apt-get remove -y chromium-browser chromium-browser-l10n chromium-codecs-ffmpeg-extra
+    apt-mark hold raspberrypi-kernel raspberrypi-bootloader
+    apt-get update
+    apt-get upgrade -y
+    apt-get autoremove -y
+    apt-get install -y vim vlc
+
+
+log "Removing bluealsa to avoid potential conflicts"
+    apt-get remove -y bluealsa
+
+
+log "Installing and configuring PulseAudio to create a combined audio sink"
+    # we alsol install ofono (this is not necessary, but it prevents from seeing this error in every log file)
+    #   [pulseaudio] backend-ofono.c: Failed to register as a handsfree audio agent with ofono
+    apt-get install -y pulseaudio pulseaudio-module-bluetooth ofono
     pulseaudio_conf='
-load-module module-combine-sink sink_name=bluebox_combined
-set-default-sink bluebox_combined
-'
-    #sudo echo "$pulseaudio_conf" >> /etc/pulse/default.pa
+    load-module module-combine-sink sink_name=bluebox_combined
+    set-default-sink bluebox_combined
+    '
+    echo "$pulseaudio_conf" > /etc/pulse/default.pa
+    sudo -u pi pulseaudio --start
     # systemctl --user status pulseaudio
     # systemctl --user enable pulseaudio
-    # installer ofono pour ne plus avoir d'erreurs lors d'un systemctlstatus pulseaudio
-    # sudo apt-get install -y ofono
 
-echo -e "\033[1;35m>>> Add users to user groups (This is not necessary but will be if we want to turn pulseaudio into a service) \033[00m"
-    sudo adduser pi audio
-    sudo adduser root audio
-    sudo adduser pulse audio
-    sudo adduser pi pulse-access
-    sudo adduser root pulse-access
 
-echo -e "\033[1;35m>>> Paste asoundrc configuration \033[00m"
+log "Adding pi and root to pulseaudio user groups (this is not necessary but will be if we want to turn pulseaudio into a service)"
+    adduser pi audio
+    adduser root audio
+    adduser pulse audio
+    adduser pi pulse-access
+    adduser root pulse-access
+
+
+log "Pasting asoundrc configuration"
     asoundrc="pcm.pulse {
         type pulse
     }
@@ -163,31 +179,12 @@ echo -e "\033[1;35m>>> Paste asoundrc configuration \033[00m"
     pcm.default pulse
     ctl.default pulse
     "
-    sudo echo "$asoundrc" > /etc/asound.conf
-    sudo echo "$asoundrc" > /home/pi/.asoundrc
+    echo "$asoundrc" > /etc/asound.conf
+    echo "$asoundrc" > /home/pi/.asoundrc
 
-# echo -e "\033[1;35m>>> Check that selected mode is a2dp_sink \033[00m"
-#     pactl list
 
-# echo -e "\033[1;35m>>> Create simultaneous audio output \033[00m"
-#     pactl load-module module-combine-sink
-#     pulseaudio --start
-
-#echo -e "\033[1;35m>>> Download an audio sample \033[00m"
-#    wget "https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_1MG.mp3"
-#    mv file_example_MP3_1MG.mp3 /home/pi/music.mp3
-
-echo -e "\033[1;35m>>> Install Python dependencies\033[00m"
-    sudo apt-get install -y python3-pip
-    sudo apt-get install -y libcairo2-dev
-    pip3 install flask Flask-JSON python-dotenv
-    echo 'export PATH="/home/pi/.local/bin:$PATH"' >> /home/pi/.bashrc
-
-echo -e "\033[1;35m>>> Install cairo for bluetool \033[00m"
-    sudo apt-get install -y libcairo2-dev
-
-echo -e "\033[1;35m>>> Install supervisor and paste configuration \033[00m"
-    sudo apt-get install -y supervisor
+log "Installing and configuring Supervisor"
+    apt-get install -y supervisor
     supervisord_conf='[program:bluebox_server]
 command = /home/pi/bluebox/app.py
 autostart = true
@@ -195,7 +192,20 @@ autorestart = true
 
 [program:create_bluetooth_sink]
 command = /bin/hciconfig hci0 class 0x200420
-'
-    # sudo echo "$supervisord_conf" >> /etc/supervisor/supervisord.conf
+    '
+    echo "$supervisord_conf" >> /etc/supervisor/supervisord.conf
 
-echo -e "\033[1;35m>>> Installation success: you can go on to the next step \033[00m"
+
+log "Installing Python dependencies for the BlueBox server"
+    apt-get install -y python3-pip
+    apt-get install -y libcairo2-dev
+    pip3 install flask Flask-JSON python-dotenv
+    echo 'export PATH="/home/pi/.local/bin:$PATH"' >> /home/pi/.bashrc
+
+
+log "Installing Python dependencies for Bluetool"
+    apt-get install -y libcairo2-dev
+
+
+log "Installation success."
+log "To complete the installation, please run \`source ~/.bashrc\`"
