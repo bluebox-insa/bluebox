@@ -18,11 +18,10 @@ Turn your **Raspberry Pi** into a **Bluetooth hub** to play your music through m
 ```bash
 # install bluebox server and bluetool
 git clone https://github.com/bluebox-insa/bluebox.git
-sudo ~/bluebox/installation/install.sh
-source ~/.bashrc
+cd bluebox && sudo make install
 git clone https://github.com/bluebox-insa/bluetool.git
-cd bluetool && sudo make install && cd ~
+cd bluetool && sudo make install
 
-# to run the server, relaunch init.sh
-sudo ~/bluebox/init.sh
+# to configure and launch the server, please reboot
+sudo reboot now
 ```
