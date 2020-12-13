@@ -130,7 +130,7 @@ def after_request(response):
 
     Args: response (flask.Response)
 
-    Returns: <none>
+    Returns: response (flask.Response)
 
     Raises: <none>
     """
@@ -140,8 +140,9 @@ def after_request(response):
         logger.info(f"==> OK, 200")
     else:
         logger.error(f"==> error {response.status_code}")    
-    logger.info(f"==> {response.data}") if response.data != "OK" else None
+    logger.info(f"==> {response.data}") if response.data.decode("utf-8") != "OK" else None
 
+    return response
 
 @app.route('/')
 def status():
