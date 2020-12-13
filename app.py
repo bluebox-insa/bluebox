@@ -113,7 +113,7 @@ def before_request():
     """
     global controllers
 
-    logger.info("%s %s" % (request.method, request.full_path))
+    logger.info("%s %s" % (request.method, request.path))
 
     old_controllers = controllers
     controllers = subprocess.check_output('hcitool dev | grep -o \"[[:xdigit:]:]\{11,17\}\"', shell=True).decode().split('\n')[:-1]
@@ -141,6 +141,7 @@ def after_request(response):
     else:
         logger.error(f"==> error {response.status_code}")    
     logger.info(f"==> {response.data}") if response.data.decode("utf-8") != "OK" else None
+    logger.info("")
 
     return response
 
@@ -232,7 +233,7 @@ def connect_input_device(mac_addr):
 
         # select /dev/hci0 for this connection
         response += f"select controllers[0] = {controllers[0]}\n"
-        logger.info(f"select controllers[0] = {controllers[0]}\n")
+        logger.info(f"select controllers[0] = {controllers[0]}")
         process.stdin.write(f"select {controllers[0]}\n")
         process.stdin.flush()
 
@@ -268,7 +269,7 @@ def connect_input_device(mac_addr):
 
         # connect
         response += f"connect {mac_addr}\n"
-        logger.info(f"connect {mac_addr}\n")
+        logger.info(f"connect {mac_addr}")
         process.stdin.write(f"connect {mac_addr}\n")
         process.stdin.flush()
         out, err = process.communicate()
@@ -310,12 +311,11 @@ def connect_output_device(mac_addr):
         process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
         response += f"select controllers[{controller_idx}] = {controllers[controller_idx]}\n"
-        logger.info(f"select controllers[{controller_idx}] = {controllers[controller_idx]}\n")
+        logger.info(f"select controllers[{controller_idx}] = {controllers[controller_idx]}")
         process.stdin.write(f"select {controllers[controller_idx]}\n")
         process.stdin.flush()
 
         # disconnect device if it is already connected to another bluetooth controller
-        logger.info(f"is {controller_idx} in {devices.keys()} : {controller_idx in devices.keys()}")
         if controller_idx in devices.keys():
             response += f"controllers[{controller_idx}] is already connected to {devices[controller_idx]}"
             logger.info(f"controllers[{controller_idx}] is already connected to {devices[controller_idx]}")
@@ -469,7 +469,7 @@ def reset_output_device():
     try:
         process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
-        input_device = devices[0]
+        input_device = devices[0] if 0 in devices.keys() else ""
         for c in controllers[1:]:
             response += f"select {c}"
             logger.info(f"select {c}")
