@@ -68,23 +68,23 @@ from bluetool.bluetool import Bluetooth
 #-----------------------------------
 #          global variables
 #-----------------------------------
-logging.basicConfig(level = logging.INFO)
-logger                    = logging.getLogger(__name__)
+logging.basicConfig(filename = "logs.log", level = logging.INFO)
+logger                       = logging.getLogger(__name__)
 
-app                       = Flask(__name__)
+app                          = Flask(__name__)
 FlaskJSON(app)
 
 # bluetool handler, used only to scan nearby bluetooth devices or retrieve currently connected bluetooth devices
-bluetooth                 = Bluetooth()
+bluetooth                    = Bluetooth()
 
 # list of MAC addresses of the bluetooth controllers on the Raspberry Pi
-# controllers[0] = /dev/hci0,   controllers[1] = /dev/hci1 and so on
-controllers               = subprocess.check_output('hcitool dev | grep -o \"[[:xdigit:]:]\{11,17\}\"', shell=True).decode().split('\n')[:-1]
+# controllers[0]             = /dev/hci0,   controllers[1] = /dev/hci1 and so on
+controllers                  = subprocess.check_output('hcitool dev | grep -o \"[[:xdigit:]:]\{11,17\}\"', shell=True).decode().split('\n')[:-1]
 controllers.reverse()
-controller_idx            = 1
+controller_idx               = 1
 
 # dictionnary of connected devices
-devices                   = {}
+devices                      = {}
 
 
 #---------------------------
