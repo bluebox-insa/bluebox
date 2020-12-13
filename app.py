@@ -51,7 +51,7 @@ The Bluebox may not work properly if an audio cable is wired in when it boots.
 #---------------------------
 #          imports
 #---------------------------
-import subprocess, logging
+import subprocess, io, logging
 logging.getLogger("bluetool").setLevel(logging.WARNING)
 logging.getLogger("werkzeug").setLevel(logging.INFO)
 from time import sleep
@@ -73,6 +73,11 @@ logger                       = logging.getLogger(__name__)
 handler                      = logging.FileHandler('/home/pi/logs.log')
 logger.addHandler(handler)
 
+# string handler
+log_capture_string = io.StringIO()
+handler2 = logging.StreamHandler(log_capture_string)
+logger.addHandler(handler2)
+
 app                          = Flask(__name__)
 FlaskJSON(app)
 
@@ -93,8 +98,8 @@ devices                      = {}
 #          routes
 #---------------------------
 @app.before_request
-def refresh_controllers_before_request():
-    """ refresh_controllers_before_request
+def before_request():
+    """ before_request
 
     A bluetooth dongle may be plugged or unplugged at any time.
     To avoid errors, we should refresh the list of controllers before processing any request.
@@ -115,6 +120,27 @@ def refresh_controllers_before_request():
     controllers.reverse()
     if controllers != old_controllers:
         logger.info(f"controllers updated to {controllers}")
+
+
+@app.after_request
+def after_request(response):
+    """ after_request
+
+    Log result after request.
+
+    Args: response (flask.Response)
+
+    Returns: <none>
+
+    Raises: <none>
+    """
+    # log_contents = log_capture_string.getvalue()
+    # log_capture_string.close()
+    if response.status_code == 200:
+        logger.info(f"==> OK, 200")
+    else:
+        logger.error(f"==> error {response.status_code}")    
+    logger.info(f"==> {response.data}") if response.data != "OK" else None
 
 
 @app.route('/')
@@ -150,7 +176,7 @@ def scan_for_bluetooth_devices():
     """
     bluetooth.scan()
     found_devices = bluetooth.get_available_devices()
-    return found_devices
+    return found_devices, 200
 
 
 @app.route('/devices')
@@ -175,7 +201,7 @@ def get_connected_bluetooth_devices():
     Raises: <none>
     """
     found_devices = bluetooth.get_connected_devices()
-    return found_devices
+    return found_devices, 200
 
 
 @app.route('/connect_in/<mac_addr>')
@@ -229,7 +255,7 @@ def connect_input_device(mac_addr):
             sleep(2)
             response += f"device {mac_addr} was not paired\n"
             response += f"pair {mac_addr}\n"
-            logger.info(f"pair {mac_addr}\n")
+            logger.info(f"pair {mac_addr}")
             process.stdin.write(f"pair {mac_addr}\n")
             process.stdin.flush()
             sleep(7)
@@ -249,13 +275,13 @@ def connect_input_device(mac_addr):
 
         # wait for a few seconds before confirmation
         sleep(4)
-        if isMacAddrInDevices(mac_addr, bluetooth.get_connected_devices()):
-            devices[0] = mac_addr
-            return "OK", 200
-        else:
-            return response, 500
+        assert isMacAddrInDevices(mac_addr, bluetooth.get_connected_devices()), "connecting input {mac_addr} failed"
+        devices[0] = mac_addr
+
+        return "OK", 200
 
     except Exception as e:
+        logger.error(e)
         response += repr(e)
         return response, 500
 
@@ -306,7 +332,7 @@ def connect_output_device(mac_addr):
         if not isMacAddrInDevices(mac_addr, bluetooth.get_paired_devices()):
             response += f"device {mac_addr} was not paired\n"
             response += f"pair {mac_addr}\n"
-            logger.info(f"pair {mac_addr}\n")
+            logger.info(f"pair {mac_addr}")
             process.stdin.write(f"pair {mac_addr}\n")
             process.stdin.flush()
             sleep(6)
@@ -315,23 +341,24 @@ def connect_output_device(mac_addr):
 
         # connect
         response += f"connect {mac_addr}\n"
-        logger.info(f"connect {mac_addr}\n")
+        logger.info(f"connect {mac_addr}")
         process.stdin.write(f"connect {mac_addr}\n")
         process.stdin.flush()
 
         # wait for a few seconds before confirmation
         sleep(4)
-        if isMacAddrInDevices(mac_addr, bluetooth.get_connected_devices()):
-            devices[controller_idx] = mac_addr
-            controller_idx += 1
-            logger.info(f"controller_idx set to {controller_idx}")
-            beep()
-            return "OK", 200
-        else:
-            return "Error", 500
+        assert isMacAddrInDevices(mac_addr, bluetooth.get_connected_devices()), "connecting output {mac_addr} failed"
+
+        devices[controller_idx] = mac_addr
+        controller_idx += 1
+        logger.info(f"controller_idx set to {controller_idx}")
+        beep()
+        return "OK", 200
 
     except Exception as e:
+        logger.error(e)
         response += repr(e)
+        logger.info(f"==> error 500\n{response}")
         return response, 500
 
 
@@ -355,12 +382,14 @@ def connect_output_device_failed():
 
     try:
         controller_idx -= 1
+        logging.info(f"controller_idx set back to {controller_idx}")
         response += f"controller_idx set back to {controller_idx}"
         devices.pop(controller_idx)
         response += "removing device {devices[controller_idx]}"
         return "OK", 200
 
     except Exception as e:
+        logger.error(e)
         response += repr(e)
         return response, 500
 
@@ -390,7 +419,7 @@ def reset_input_device(a):
         process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
         response += f"select {controllers[0]}\n"
-        logger.info(f"select {controllers[0]}\n")
+        logger.info(f"select {controllers[0]}")
         process.stdin.write(f"select {controllers[0]}\n")
         process.stdin.flush()
 
@@ -399,7 +428,7 @@ def reset_input_device(a):
         #     process.stdin.write(f"remove {devices[0]}\n")
         # else:
         response += f"disconnect {devices[0]}\n"
-        logger.info(f"disconnect {devices[0]}\n")
+        logger.info(f"disconnect {devices[0]}")
         process.stdin.write(f"disconnect {devices[0]}\n")
         process.stdin.flush()
         sleep(1)
@@ -407,13 +436,12 @@ def reset_input_device(a):
         out, err = process.communicate()
         response += out
 
-        if devices[0] not in bluetooth.get_connected_devices():
-            devices.pop(0)
-            return "OK", 200
-        else:
-            return response, 500
+        assert devices[0] not in bluetooth.get_connected_devices(), "disconnecting devices[0] ({devices[0]}) failed"
+        devices.pop(0)
+        return "OK", 200
 
     except Exception as e:
+        logger.error(e)
         response += repr(e)
         return response, 500
 
@@ -461,17 +489,16 @@ def reset_output_device():
                     #    response += f"remove {devices[0]}\n"
                     #    process.stdin.write(f"remove {devices[0]}\n")
 
+        connected_devices = bluetooth.get_connected_devices()
+        assertion = len(connected_devices) == 1 and isMacAddrInDevices(input_device, connected_devices)
+        err_msg = f"connected_devices = {connected_devices} but was supposed to have size 1 and contain the input device {input_device}"
 
-        out, err = process.communicate()
-        print(out)
+        assert assertion, err_msg 
 
-        still_connected = bluetooth.get_connected_devices()
-        if len(still_connected) == 1 and isMacAddrInDevices(input_device, still_connected):
-            return "OK", 200
-        else:
-            return "Error", 500
+        return "OK", 200
 
     except Exception as e:
+        logger.error(e)
         response += repr(e)
         return response, 500
 
@@ -489,6 +516,7 @@ def beep():
 
     Raises: <none>
     """
+    logging.info("Beeping...")
     subprocess.Popen(f"(cvlc /home/pi/bluebox/beep/beep_6sec.wav &) >/dev/null 2>&1", shell=True)
 
 
@@ -527,7 +555,7 @@ def isMacAddrInDevices(mac_addr, devices):
 # run as ./app.py
 if __name__ == '__main__':
     from sys import argv
-    app.run(host=argv[1]) if len(argv)>1 else app.run(host="192.168.0.137")
+    app.run(host=argv[1]) if len(argv)>1 else app.run(host="192.168.0.142")
 
 # or run with
 # flask run --host "$(hostname -I | cut -d ' ' -f 1)"

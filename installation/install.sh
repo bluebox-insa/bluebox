@@ -183,21 +183,25 @@ log "Pasting asoundrc configuration"
 
 log "Installing and configuring Supervisor"
     apt-get install -qq supervisor
-    supervisord_conf='[program:bluebox_server]
+    supervisord_conf='
+[program:launch_bluebox_server]
 command = /home/pi/bluebox/app.py
 autostart = true
 autorestart = true
 
 [program:create_bluetooth_sink]
 command = /bin/hciconfig hci0 class 0x200420
-    '
+
+[program:kill_piwiz]
+command = /usr/bin/sudo /usr/bin/pkill piwiz
+'
     echo "$supervisord_conf" >> /etc/supervisor/supervisord.conf
 
 
 log "Installing Python dependencies for the BlueBox server"
     apt-get install -qq python3-pip
     apt-get install -qq libcairo2-dev
-    pip3 install flask Flask-JSON python-dotenv
+    pip3 install --quiet flask Flask-JSON python-dotenv
     echo 'export PATH="/home/pi/.local/bin:$PATH"' >> /home/pi/.bashrc
 
 
@@ -206,4 +210,4 @@ log "Installing Python dependencies for Bluetool"
 
 
 log "Installation success."
-log "To complete the installation, please run \`source ~/.bashrc\`"
+log "To complete the installation, please reboot the Raspberry Pi"
