@@ -108,7 +108,7 @@ def refresh_controllers_before_request():
     """
     global controllers
 
-    logger.info("%s %s" % (request.method, request.endpoint))
+    logger.info("%s %s" % (request.method, request.full_path))
 
     old_controllers = controllers
     controllers = subprocess.check_output('hcitool dev | grep -o \"[[:xdigit:]:]\{11,17\}\"', shell=True).decode().split('\n')[:-1]
