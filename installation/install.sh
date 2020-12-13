@@ -8,9 +8,7 @@ if [[ `id -u` != 0 ]]; then
 fi
 
 log() {
-    set +x
     echo -e "\033[1;32m\u25CF BlueBox Installer: $@ \033[00m"
-    set -x
 }
 
 bashrc="#-----------------------------------------------------------
@@ -133,22 +131,22 @@ log "Appending to various configuration files (bashrc, gitconfig, vimrc, inputrc
 
 
 log "Updating system packages (except chromium-browser and raspberrypi-kernel)"
-    apt-get remove -y chromium-browser chromium-browser-l10n chromium-codecs-ffmpeg-extra
-    apt-mark hold raspberrypi-kernel raspberrypi-bootloader
+    #apt-get remove -qq chromium-browser chromium-browser-l10n chromium-codecs-ffmpeg-extra
+    #apt-mark hold raspberrypi-kernel raspberrypi-bootloader
     apt-get update
-    apt-get upgrade -y
-    apt-get autoremove -y
-    apt-get install -y vim vlc
+    #apt-get upgrade -qq
+    apt-get autoremove -qq
+    apt-get install -qq vim vlc
 
 
 log "Removing bluealsa to avoid potential conflicts"
-    apt-get remove -y bluealsa
+    apt-get remove -qq bluealsa
 
 
 log "Installing and configuring PulseAudio to create a combined audio sink"
     # we alsol install ofono (this is not necessary, but it prevents from seeing this error in every log file)
     #   [pulseaudio] backend-ofono.c: Failed to register as a handsfree audio agent with ofono
-    apt-get install -y pulseaudio pulseaudio-module-bluetooth ofono
+    apt-get install -qq pulseaudio pulseaudio-module-bluetooth ofono
     pulseaudio_conf='
     load-module module-combine-sink sink_name=bluebox_combined
     set-default-sink bluebox_combined
@@ -184,7 +182,7 @@ log "Pasting asoundrc configuration"
 
 
 log "Installing and configuring Supervisor"
-    apt-get install -y supervisor
+    apt-get install -qq supervisor
     supervisord_conf='[program:bluebox_server]
 command = /home/pi/bluebox/app.py
 autostart = true
@@ -197,14 +195,14 @@ command = /bin/hciconfig hci0 class 0x200420
 
 
 log "Installing Python dependencies for the BlueBox server"
-    apt-get install -y python3-pip
-    apt-get install -y libcairo2-dev
+    apt-get install -qq python3-pip
+    apt-get install -qq libcairo2-dev
     pip3 install flask Flask-JSON python-dotenv
     echo 'export PATH="/home/pi/.local/bin:$PATH"' >> /home/pi/.bashrc
 
 
 log "Installing Python dependencies for Bluetool"
-    apt-get install -y libcairo2-dev
+    apt-get install -qq libcairo2-dev
 
 
 log "Installation success."
