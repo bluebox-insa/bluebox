@@ -153,7 +153,7 @@ log "Installing and configuring PulseAudio to create a combined audio sink"
     load-module module-combine-sink sink_name=bluebox_combined
     set-default-sink bluebox_combined
     '
-    echo "$pulseaudio_conf" > /etc/pulse/default.pa
+    echo "$pulseaudio_conf" >> /etc/pulse/default.pa
     sudo -u pi pulseaudio --start
     # systemctl --user status pulseaudio
     # systemctl --user enable pulseaudio
