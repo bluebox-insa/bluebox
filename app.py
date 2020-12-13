@@ -90,6 +90,26 @@ devices                   = {}
 #---------------------------
 #          routes
 #---------------------------
+@app.before_request
+def refresh_controllers_before_request():
+    """ refresh_controllers_before_request
+
+    A bluetooth dongle may be plugged or unplugged at any time.
+    To avoid errors, we should refresh the list of controllers before processing any request.
+    This function does it, thanks to the Flask decorator @before_request
+
+    Args: <none>
+
+    Returns: <none>
+
+    Raises: <none>
+    """
+    global controllers
+    controllers = subprocess.check_output('hcitool dev | grep -o \"[[:xdigit:]:]\{11,17\}\"', shell=True).decode().split('\n')[:-1]
+    controllers.reverse()
+    logger.info(f"before_request: controllers set to {controllers}")
+
+
 @app.route('/')
 def status():
     return "OK", 200
@@ -166,7 +186,7 @@ def connect_input_device(mac_addr):
 
     Raises: <none>
     """
-    global controller, controller_idx, devices
+    global controllers, controller_idx, devices
 
     response = ""
 
@@ -248,15 +268,15 @@ def connect_output_device(mac_addr):
 
     Raises: <none>
     """
-    global controller, controller_idx, devices
+    global controllers, controller_idx, devices
 
     response = ""
 
     try:
         process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
-        response += f"select controller[{controller_idx}] = {controllers[controller_idx]}\n"
-        logger.info(f"select controller[{controller_idx}] = {controllers[controller_idx]}\n")
+        response += f"select controllers[{controller_idx}] = {controllers[controller_idx]}\n"
+        logger.info(f"select controllers[{controller_idx}] = {controllers[controller_idx]}\n")
         process.stdin.write(f"select {controllers[controller_idx]}\n")
         process.stdin.flush()
 
@@ -308,6 +328,35 @@ def connect_output_device(mac_addr):
         return response, 500
 
 
+@app.route('/connect_out_failed')
+def connect_output_device_failed():
+    """ connect_output_device_failed
+
+    ...
+
+    Args: <none>
+
+    Returns:
+        "OK" with status HTTP 200
+        "Error" with status HTTP 500
+
+    Raises: <none>
+    """
+    global controllers, controller_idx, devices
+
+    response = ""
+
+    try:
+        controller_idx -= 1
+        response += f"controller_idx set back to {controller_idx}"
+        devices.pop(controller_idx)
+        response += "removing device {devices[controller_idx]}"
+        return "OK", 200
+
+    except Exception as e:
+        response += repr(e)
+        return response, 500
+
 @app.route('/reset_in')
 def reset_input_device(a):
     """ reset_input_device
@@ -322,7 +371,7 @@ def reset_input_device(a):
 
     Raises: <none>
     """
-    global controller, controller_idx, devices
+    global controllers, controller_idx, devices
 
     response = ""
     try:
@@ -378,7 +427,7 @@ def reset_output_device():
     Raises: <none>
     """
 
-    global controller, controller_idx, devices
+    global controllers, controller_idx, devices
 
     response = ""
     try:
@@ -471,7 +520,7 @@ def isMacAddrInDevices(mac_addr, devices):
 # run as ./app.py
 if __name__ == '__main__':
     from sys import argv
-    app.run(host=argv[1]) if len(argv)>1 else app.run(host="192.168.0.142")
+    app.run(host=argv[1]) if len(argv)>1 else app.run(host="192.168.0.137")
 
 # or run with
 # flask run --host "$(hostname -I | cut -d ' ' -f 1)"
