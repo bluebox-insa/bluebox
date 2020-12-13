@@ -70,6 +70,8 @@ from bluetool.bluetool import Bluetooth
 #-----------------------------------
 logging.basicConfig(filename = "logs.log", level = logging.INFO)
 logger                       = logging.getLogger(__name__)
+handler                      = logging.FileHandler('/home/pi/logs.log')
+logger.addHandler(handler)
 
 app                          = Flask(__name__)
 FlaskJSON(app)
