@@ -92,6 +92,8 @@ controller_idx               = 1
 
 # dictionnary of connected devices
 devices                      = {}
+pairings                     = {}
+# hci_index => device_mac
 
 
 #---------------------------
@@ -104,12 +106,6 @@ def before_request():
     A bluetooth dongle may be plugged or unplugged at any time.
     To avoid errors, we should refresh the list of controllers before processing any request.
     This function does it, thanks to the Flask decorator @before_request
-
-    Args: <none>
-
-    Returns: <none>
-
-    Raises: <none>
     """
     global controllers
 
@@ -121,6 +117,15 @@ def before_request():
     if controllers != old_controllers:
         logger.info(f"controllers updated to {controllers}")
 
+    #on vérifie la correspondance entre devices et bluetooth.get_connected_devices
+    # bluetool_devices = bluetooth.get_connected_devices()
+    # compare lengths
+    # assert len(devices) == len(bluetool_devices), f"len(devices) = {len(devices)} is not equal to len(bluetool_devices) = {len(bluetool_devices)} as expected"
+    # for conn in devices:
+    #     assert isMacAddrInDevices(conn["device_mac"], bluetool_devices), f"bluetool_devices = {bluetool_devices} doesn't contain conn[device_mac] = {conn["device_mac"]} as expected"
+
+
+
 
 @app.after_request
 def after_request(response):
@@ -131,8 +136,6 @@ def after_request(response):
     Args: response (flask.Response)
 
     Returns: response (flask.Response)
-
-    Raises: <none>
     """
     # log_contents = log_capture_string.getvalue()
     # log_capture_string.close()
@@ -173,11 +176,9 @@ def scan_for_bluetooth_devices():
             {'name': '<unknown>',   'mac_address': '00:1A:7D:DA:71:13'}
             {'name': '<unknown>',   'mac_address': '67:A8:88:C6:26:C3'}
         ]
-
-    Raises: <none>
     """
     bluetooth.scan()
-    found_devices = bluetooth.get_available_devices()
+    found_devices = list(set(bluetooth.get_available_devices()))
     return found_devices, 200
 
 
@@ -199,8 +200,6 @@ def get_connected_bluetooth_devices():
             {'name': 'UE BOOM 2',   'mac_address': '88:C6:26:EE:BC:FE'}
             {'name': 'BLP9820',     'mac_address': '30:21:15:54:78:AA'}
         ]
-
-    Raises: <none>
     """
     found_devices = bluetooth.get_connected_devices()
     return found_devices, 200
@@ -218,8 +217,6 @@ def connect_input_device(mac_addr):
     Returns:
         "OK" with status HTTP 200
         "Error" with status HTTP 500
-
-    Raises: <none>
     """
     global controllers, controller_idx, devices
 
@@ -277,7 +274,7 @@ def connect_input_device(mac_addr):
 
         # wait for a few seconds before confirmation
         sleep(4)
-        assert isMacAddrInDevices(mac_addr, bluetooth.get_connected_devices()), "connecting input {mac_addr} failed"
+        assert isMacAddrInDevices(mac_addr, bluetooth.get_connected_devices()), f"connecting input {mac_addr} failed"
         devices[0] = mac_addr
 
         return "OK", 200
@@ -300,8 +297,6 @@ def connect_output_device(mac_addr):
     Returns:
         "OK" with status HTTP 200
         "Error" with status HTTP 500
-
-    Raises: <none>
     """
     global controllers, controller_idx, devices
 
@@ -348,7 +343,7 @@ def connect_output_device(mac_addr):
 
         # wait for a few seconds before confirmation
         sleep(4)
-        assert isMacAddrInDevices(mac_addr, bluetooth.get_connected_devices()), "connecting output {mac_addr} failed"
+        assert isMacAddrInDevices(mac_addr, bluetooth.get_connected_devices()), f"connecting output {mac_addr} failed"
 
         devices[controller_idx] = mac_addr
         controller_idx += 1
@@ -374,8 +369,6 @@ def connect_output_device_failed():
     Returns:
         "OK" with status HTTP 200
         "Error" with status HTTP 500
-
-    Raises: <none>
     """
     global controllers, controller_idx, devices
 
@@ -386,7 +379,7 @@ def connect_output_device_failed():
         logging.info(f"controller_idx set back to {controller_idx}")
         response += f"controller_idx set back to {controller_idx}"
         devices.pop(controller_idx)
-        response += "removing device {devices[controller_idx]}"
+        response += f"removing device {devices[controller_idx]}"
         return "OK", 200
 
     except Exception as e:
@@ -405,8 +398,6 @@ def reset_input_device(a):
     Returns:
         "OK" with status HTTP 200
         "Error" with status HTTP 500
-
-    Raises: <none>
     """
     global controllers, controller_idx, devices
 
@@ -437,7 +428,7 @@ def reset_input_device(a):
         out, err = process.communicate()
         response += out
 
-        assert devices[0] not in bluetooth.get_connected_devices(), "disconnecting devices[0] ({devices[0]}) failed"
+        assert devices[0] not in bluetooth.get_connected_devices(), f"disconnecting devices[0] ({devices[0]}) failed"
         devices.pop(0)
         return "OK", 200
 
@@ -459,8 +450,6 @@ def reset_output_device():
     Returns:
         "OK" with status HTTP 200
         "Error" with status HTTP 500
-
-    Raises: <none>
     """
 
     global controllers, controller_idx, devices
@@ -510,12 +499,6 @@ def beep():
 
     Opens a vlc subprocess for playing a beep audio file.
     This is used as a confirmation that a Bluetooth device has be properly connected.
-
-    Args: <none>
-
-    Returns: <none>
-
-    Raises: <none>
     """
     logging.info("Beeping...")
     subprocess.Popen(f"(cvlc /home/pi/bluebox/beep/beep_6sec.wav &) >/dev/null 2>&1", shell=True)
@@ -539,8 +522,6 @@ def isMacAddrInDevices(mac_addr, devices):
 
     Returns:
         True / False
-    
-    Raises: <none>
     """
     for d in devices:
         if mac_addr.encode() in d.values():
