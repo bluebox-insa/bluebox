@@ -54,7 +54,7 @@ The Bluebox may not work properly if an audio cable is wired in when it boots.
 #---------------------------
 import subprocess, io, logging
 logging.getLogger("bluetool").setLevel(logging.WARNING)
-logging.getLogger("werkzeug").setLevel(logging.INFO)
+logging.getLogger("werkzeug").setLevel(logging.WARNING)
 from time import sleep
 
 from flask import Flask, request
@@ -110,7 +110,7 @@ def before_request():
     """
     global controllers
 
-    logger.info("%s %s" % (request.method, request.path))
+    logger.info("%s %s" % (request.method, request.full_path))
 
     old_controllers = controllers
     controllers = subprocess.check_output('hcitool dev | grep -o \"[[:xdigit:]:]\{11,17\}\"', shell=True).decode().split('\n')[:-1]
@@ -128,18 +128,21 @@ def before_request():
 
 @app.after_request
 def after_request(response):
-    """ 
+    """
     Log results after request.
 
     Args: response (flask.Response)
     Returns: response (flask.Response)
     """
+
+    logger.info(f"==> {response.data}") if response.data.decode() else None
+
     if response.status_code == 200:
-        logger.info(f"==> OK, 200")
+        logger.info(f"==> OK, 200\n")
     else:
-        logger.error(f"==> error {response.status_code}")    
-    logger.info(f"==> {response.data}\n") if response.data.decode("utf-8") != "OK" else None
-    # log_contents = log_capture_string.getvalue()
+        logger.error(f"==> Error {response.status_code}\n")
+        log_contents = log_capture_string.getvalue()
+        response.data = log_contents
     # log_capture_string.close()
     return response
 
@@ -169,13 +172,13 @@ def scan_for_bluetooth_devices():
         ]
     """
     bluetooth.scan()
-    found_devices = list(set(bluetooth.get_available_devices()))
+    found_devices = bluetooth.get_available_devices()
     return found_devices, 200
 
 
 
-@app.route('/connect/<mac_addr>')
-def connect_to_device(mac_addr):
+@app.route('/connect_<target>/<mac_addr>')
+def connect_to_device(target, mac_addr):
     """
     Connects controller X to a MAC address. By convention, the controller 0 is reserved for the input device.
 
@@ -188,7 +191,8 @@ def connect_to_device(mac_addr):
     global connections
 
     try:
-        controller_index = get_available_controller(mac_addr)
+        is_input = target == "input"
+        controller_index = get_available_controller(mac_addr, is_input)
 
         if mac_addr in connections.values():
             return "device already connected", 200
@@ -197,30 +201,31 @@ def connect_to_device(mac_addr):
         send_command(proc, f"select {controllers[controller_index]}")
 
         # scan
-        send_command(proc, "scan on", 3)
+        send_command(proc, "scan on", 5)
 
         # pair
         if {"controller_index" : controller_index, "mac_addr" : mac_addr} not in pairings:
             send_command(proc, f"pair {mac_addr}", 7)
-            send_command(proc, "yes", 3)
+            send_command(proc, "yes", 3) if is_input else None
 
         # connect
-        send_command(proc, f"connect {mac_addr}", 4)
+        send_command(proc, f"connect {mac_addr}", 3)
         assert is_device_connected(mac_addr), f"connecting input {mac_addr} failed"
 
         # append to connections and pairings
         connections[controller_index] = mac_addr
         pairings.append({"controller_index" : controller_index, "mac_addr" : mac_addr})
 
-        return "OK", 200
+        beep()
+        return "", 200
 
     except Exception as e:
-        logger.error(e)
-        return response, 500
+        logger.exception(e)
+        return "", 500
 
 
-@app.route('/connect_failed')
-def connect_failed():
+@app.route('/connect_failed/<mac_addr>')
+def connect_failed(mac_addr):
     """
     Returns:
         "OK" with status HTTP 200
@@ -228,17 +233,20 @@ def connect_failed():
     """
     global current_controller, connections
 
-    response = ""
-
     try:
-        current_controller -= 1
-        logging.info(f"current_controller set back to {current_controller}")
-        connections.pop(current_controller)
-        return "OK", 200
+        ele = [key for key,value in connections.items() if value == mac_addr][0]
+        connections.pop(ele)
+        logging.info(f"{mac_addr} removed from connections (it is now size {len(connections)})")
+        return "", 200
+
+    except IndexError as e:
+        logger.exception(e)
+        logger.error(f"Tried to remove mac_addr {mac_addr} but this address was not present in connections = {connections} as expected")
+        return "", 200
 
     except Exception as e:
-        logger.error(e)
-        return response, 500
+        logger.exception(e)
+        return "", 500
 
 
 @app.route('/reset_<target>')
@@ -255,10 +263,10 @@ def reset(target):
     global current_controller, connections
 
     try:
-        if target == "in":
+        if target == "input":
             controller_indexes = [0]
         else:
-            controller_indexes = [k for k in range(1,len(controllers))]
+            controller_indexes = list(connections.keys())
         logger.debug(f"indexes to delete = {controller_indexes}")
 
         proc = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
@@ -266,7 +274,7 @@ def reset(target):
         for i in controller_indexes:
             send_command(proc, f"select {controllers[i]}")
 
-            if request.args("hard"):
+            if request.args.get("hard") is not None:
                 send_command(proc, f"remove {connections[i]}", 1)
             else:
                 send_command(proc, f"disconnect {connections[i]}", 1)
@@ -275,12 +283,12 @@ def reset(target):
         for i in controller_indexes:
             assert not is_device_connected(connections[i]), f"disconnecting connections[{i}] ({connections[i]}) failed"
             connections.pop(i)
-        
-        return "OK", 200
+
+        return "", 200
 
     except Exception as e:
-        logger.error(e)
-        return response, 500
+        logger.exception(e)
+        return "", 500
 
 
 @app.route('/beep')
@@ -289,8 +297,14 @@ def beep():
     Opens a vlc subprocess for playing a beep audio file.
     This is used as a confirmation that a Bluetooth device has be properly connected.
     """
-    logger.info("Beeping...")
-    subprocess.Popen(f"(cvlc /home/pi/bluebox/beep/beep_6sec.wav &) >/dev/null 2>&1", shell=True)
+    try:
+        logger.info("Beeping...")
+        subprocess.Popen(f"(cvlc /home/pi/bluebox/beep/beep_6sec.wav &) >/dev/null 2>&1", shell=True)
+        sleep(2)
+        return "", 200
+    except Exception as e:
+        logger.exception(e)
+        return "", 500
 
 
 
@@ -334,29 +348,38 @@ def send_command(process, command, wait_seconds=0):
         sleep(wait_seconds)
 
 
-def get_available_controller(mac_addr, input_device=False):
+def get_available_controller(mac_addr, is_input=False):
     """
         Re
     """
-    if input_device:
+    global current_controller
+
+    if is_input:
         controller_index = 0
     else:
-        controller_index = current_controller
+        l = [k for k in range(1, len(controllers)) if k not in connections.keys()]
+        if len(l) == 0:
+            raise NoAvailableControllersError()
+        controller_index = l[0]
 
     if controller_index in connections.keys():
-        raise Exception(f"controllers[0] is already connected to {connections[controller_index]}")
-        logger.info()
-        send_command(proc, f"disconnect {connections[controller_index]}", 5)
+        raise NoAvailableControllersError(f"controllers[{controller_index}] is already connected to {connections[controller_index]}")
+        # send_command(proc, f"disconnect {connections[controller_index]}", 5)
+    logger.info(f"Found available controller {controller_index}")
+    return controller_index
 
 
+class NoAvailableControllersError(Exception):
+    pass
 
 #-----------------------
 #         run
 #-----------------------
 # run as ./app.py
+print(f"BlueBox server launched.\nExecute `tail -f {LOGFILE}` to see logs")
+print(f"Found {len(controllers)} controllers: {controllers}")
 if __name__ == '__main__':
     from sys import argv
-    app.run(host=argv[1]) if len(argv)>1 else app.run(host="192.168.0.142")
-    print(f"BlueBox server launched.\nExecute `tail -f {LOGFILE}` to see logs")
+    app.run(host=argv[1]) if len(argv)>1 else app.run(host="192.168.0.137")
 # or run with
 # flask run --host "$(hostname -I | cut -d ' ' -f 1)"
