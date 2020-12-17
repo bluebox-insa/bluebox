@@ -172,10 +172,27 @@ def scan_for_bluetooth_devices():
         ]
     """
     bluetooth.scan()
-    found_devices = bluetooth.get_available_devices()
+    found_devices = bluetooth.get_available_devices(unique_values=True)
     return found_devices, 200
 
 
+@app.route('/devices')
+@as_json
+def get_devices():
+    """
+    Retrieves currently connected bluetooth devices.
+    The scan cannot distinguish output devices (e.g. Bluetooth speakers) from input devices (e.g. smartphones).
+
+    Returns:
+        a JSON array of the devices found, for instance
+        [
+            {'name': 'Redmi',       'mac_address': '20:34:FB:A5:11:E8'}
+            {'name': 'UE BOOM 2',   'mac_address': '88:C6:26:EE:BC:FE'}
+            {'name': '<unknown>',   'mac_address': '67:A8:88:C6:26:C3'}
+        ]
+    """
+    found_devices = bluetooth.get_connected_devices()
+    return found_devices, 200
 
 @app.route('/connect_<target>/<mac_addr>')
 def connect_to_device(target, mac_addr):
@@ -201,7 +218,7 @@ def connect_to_device(target, mac_addr):
         send_command(proc, f"select {controllers[controller_index]}")
 
         # scan
-        send_command(proc, "scan on", 5)
+        send_command(proc, "scan on", 7)
 
         # pair
         if {"controller_index" : controller_index, "mac_addr" : mac_addr} not in pairings:
@@ -224,14 +241,14 @@ def connect_to_device(target, mac_addr):
         return "", 500
 
 
-@app.route('/connect_failed/<mac_addr>')
-def connect_failed(mac_addr):
+@app.route('/failed/<mac_addr>')
+def connection_failed(mac_addr):
     """
     Returns:
         "OK" with status HTTP 200
         "Error" with status HTTP 500
     """
-    global current_controller, connections
+    global connections
 
     try:
         ele = [key for key,value in connections.items() if value == mac_addr][0]
@@ -264,25 +281,31 @@ def reset(target):
 
     try:
         if target == "input":
-            controller_indexes = [0]
+            controller_indexes = [controllers[0]]
         else:
-            controller_indexes = list(connections.keys())
+            controller_indexes = controllers[1:]
         logger.debug(f"indexes to delete = {controller_indexes}")
+
+        try:
+            remove_devices = request.args.get("hard") is not None
+        except RuntimeError:
+            remove_devices = True
 
         proc = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
-        for i in controller_indexes:
-            send_command(proc, f"select {controllers[i]}")
+        devices = bluetooth.get_connected_devices(encode=False, unique_values=True)
+        for d in devices:
+            for c in controller_indexes:
+                send_command(proc, f"select {c}")
+                if remove_devices:
+                    send_command(proc, f"remove {d['mac_address']}", 1)
+                else:
+                    send_command(proc, f"disconnect {d['mac_address']}", 1)
+            sleep(1)
 
-            if request.args.get("hard") is not None:
-                send_command(proc, f"remove {connections[i]}", 1)
-            else:
-                send_command(proc, f"disconnect {connections[i]}", 1)
-
-        sleep(1)
-        for i in controller_indexes:
-            assert not is_device_connected(connections[i]), f"disconnecting connections[{i}] ({connections[i]}) failed"
-            connections.pop(i)
+        devices = bluetooth.get_connected_devices()
+        assert len(devices) == 0, f"devices is of size {len(devices)} but was expected to be empty."
+        connections.clear()
 
         return "", 200
 
@@ -299,7 +322,7 @@ def beep():
     """
     try:
         logger.info("Beeping...")
-        subprocess.Popen(f"(cvlc /home/pi/bluebox/beep/beep_6sec.wav &) >/dev/null 2>&1", shell=True)
+        subprocess.Popen(f"(cvlc /home/pi/bluebox/beep/beep_6sec_2.wav &) >/dev/null 2>&1", shell=True)
         sleep(2)
         return "", 200
     except Exception as e:
@@ -321,9 +344,13 @@ def is_mac_addr_in_devices(mac_addr, devices):
     Returns:
         True / False
     """
+    logger.debug(f"Searching {mac_addr} in size {len(devices)} array {devices}")
     for d in devices:
         if mac_addr.encode() in d.values():
+            logger.debug(f"is {mac_addr.encode()} in {d.values()} : True")
             return True
+        else:
+            logger.debug(f"is {mac_addr.encode()} in {d.values()} : False")
     return False
 
 def is_device_connected(mac_addr):
@@ -359,7 +386,7 @@ def get_available_controller(mac_addr, is_input=False):
     else:
         l = [k for k in range(1, len(controllers)) if k not in connections.keys()]
         if len(l) == 0:
-            raise NoAvailableControllersError()
+            raise NoAvailableControllersError(f"There is {len(controllers)} controllers.\nAnd {len(connections.keys)} busy controllers: {connections.keys()}.")
         controller_index = l[0]
 
     if controller_index in connections.keys():
@@ -378,6 +405,13 @@ class NoAvailableControllersError(Exception):
 # run as ./app.py
 print(f"BlueBox server launched.\nExecute `tail -f {LOGFILE}` to see logs")
 print(f"Found {len(controllers)} controllers: {controllers}")
+devices_at_init = bluetooth.get_connected_devices(unique_values=True)
+print(f"Found {len(devices_at_init)} devices: {devices_at_init}")
+if len(devices_at_init)>0:
+    reset("output")
+    sleep(3)
+    reset("input")
+print()
 if __name__ == '__main__':
     from sys import argv
     app.run(host=argv[1]) if len(argv)>1 else app.run(host="192.168.0.137")
