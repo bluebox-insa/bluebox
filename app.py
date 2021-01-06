@@ -52,7 +52,7 @@ The Bluebox may not work properly if an audio cable is wired in when it boots.
 #---------------------------
 #          imports
 #---------------------------
-import subprocess, io, logging
+import subprocess, io, logging, re
 logging.getLogger("bluetool").setLevel(logging.WARNING)
 logging.getLogger("werkzeug").setLevel(logging.WARNING)
 from time import sleep
@@ -218,16 +218,16 @@ def connect_to_device(target, mac_addr):
         send_command(proc, f"select {controllers[controller_index]}")
 
         # scan
-        send_command(proc, "scan on", 7)
+        send_command(proc, "scan on", 3)
 
         # pair
         if {"controller_index" : controller_index, "mac_addr" : mac_addr} not in pairings:
-            send_command(proc, f"pair {mac_addr}", 7)
+            send_command(proc, f"pair {mac_addr}", 3)
             send_command(proc, "yes", 3) if is_input else None
 
         # connect
         send_command(proc, f"connect {mac_addr}", 3)
-        assert is_device_connected(mac_addr), f"connecting input {mac_addr} failed"
+        assert is_device_connected(mac_addr), f"connecting device {mac_addr} failed"
 
         # append to connections and pairings
         connections[controller_index] = mac_addr
@@ -237,6 +237,30 @@ def connect_to_device(target, mac_addr):
         return "", 200
 
     except Exception as e:
+        if proc is not None:
+            # get detailed output from bluetoothctl
+            out, err = proc.communicate()
+
+            # filter useless messages from output
+            out = re.sub('.*CHG.*\n', '', out)
+            out = re.sub('  [0-9a-f ]{9,}.*\n', '', out)
+            out = re.sub('.*\\[0;94m\\[.+\\].*\\[0m# \n', '', out)
+            out = re.sub('\n\n', '\n', out)
+            out = "-----------------------------------------------------\n"+out
+            out += "-----------------------------------------------------"
+
+            # log output
+            logger.error("\n            ** bluetoothctl output **\n" + out)
+
+            #x = re.search('.*\\[0;94m\\[.+\\].*\\[0m# \n', out)
+            #if x:
+            #    print("SUCCESS")
+            #    print(x)
+            #    logger.error(out2) if out2 != out else None
+            #else:
+            #    print("FAILED TO MATCH")
+            if err:
+                logger.error(err)
         logger.exception(e)
         return "", 500
 
@@ -284,7 +308,7 @@ def reset(target):
             controller_indexes = [controllers[0]]
         else:
             controller_indexes = controllers[1:]
-        logger.debug(f"indexes to delete = {controller_indexes}")
+        logger.info(f"indexes to delete = {controller_indexes}")
 
         try:
             remove_devices = request.args.get("hard") is not None
@@ -301,11 +325,12 @@ def reset(target):
                     send_command(proc, f"remove {d['mac_address']}", 1)
                 else:
                     send_command(proc, f"disconnect {d['mac_address']}", 1)
+                connections.pop(d['mac_address']) if d['mac_address'] in connections.keys() else None
             sleep(1)
 
-        devices = bluetooth.get_connected_devices()
-        assert len(devices) == 0, f"devices is of size {len(devices)} but was expected to be empty."
-        connections.clear()
+        # devices = bluetooth.get_connected_devices()
+        # assert len(devices) == 0, f"devices is of size {len(devices)} but was expected to be empty."
+        # connections.clear()
 
         return "", 200
 
@@ -344,13 +369,13 @@ def is_mac_addr_in_devices(mac_addr, devices):
     Returns:
         True / False
     """
-    logger.debug(f"Searching {mac_addr} in size {len(devices)} array {devices}")
+    logger.info(f"Searching {mac_addr} in size {len(devices)} array {devices}")
     for d in devices:
         if mac_addr.encode() in d.values():
-            logger.debug(f"is {mac_addr.encode()} in {d.values()} : True")
+            logger.info(f"is {mac_addr} in array : True")
             return True
         else:
-            logger.debug(f"is {mac_addr.encode()} in {d.values()} : False")
+            logger.info(f"is {mac_addr} in array : False")
     return False
 
 def is_device_connected(mac_addr):
@@ -372,6 +397,7 @@ def send_command(process, command, wait_seconds=0):
     process.stdin.write(command + "\n")
     process.stdin.flush()
     if wait_seconds > 0:
+        logger.info(f"Waiting {wait_seconds} seconds...")
         sleep(wait_seconds)
 
 
