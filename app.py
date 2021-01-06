@@ -537,7 +537,7 @@ def isMacAddrInDevices(mac_addr, devices):
 # run as ./app.py
 if __name__ == '__main__':
     from sys import argv
-    app.run(host=argv[1]) if len(argv)>1 else app.run(host="192.168.0.142")
+    app.run(host=argv[1]) if len(argv)>1 else app.run(host="192.168.0.52")
 
 # or run with
 # flask run --host "$(hostname -I | cut -d ' ' -f 1)"
