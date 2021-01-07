@@ -1,12 +1,10 @@
 #!/usr/bin/python3
 """
 Bluebox server
-
 This server is meant to be ran on a Raspberry Pi with multiple bluetooth controllers.
 It must be combined with a special PulseAudio configuration (see /installation/install.sh script) in order to work properly.
 Controller 0 (/dev/hci0) will be receiving an audio stream.
 Controllers 1, 2, 3.. (/dev/hci1, /dev/hci2, /dev/hci3...) will be forwarding this audio stream to bluetooth speakers.
-
 Usage:
     1) User retrieves a list of available devices
         GET /scan -> HTTP 200 (OK) with the following body
@@ -17,33 +15,24 @@ Usage:
                 {'name': '<unknown>',   'mac_address': '00:1A:7D:DA:71:13'}
                 {'name': '<unknown>',   'mac_address': '67:A8:88:C6:26:C3'}
             ]
-
     2) User requests for the Raspberry Pi to connect to several output devices (e.g. Bluetooth speakers)
        GET /connect_out/88:C6:26:EE:BC:FE -> HTTP 200 (OK)
        GET /connect_out/30:21:15:54:78:AA -> HTTP 200 (OK)
        GET /connect_out/00:1A:7D:DA:71:13 -> HTTP 200 (OK)
-
     3) User requests for the Raspberry Pi to connect to an input device (e.g. a smartphone)
        GET /connect_in/20:34:FB:A5:11:E8 -> HTTP 200 (OK)
-
     4) Done. Any audio stream will now automatically follow this path
         - emission from the input device on interface 20:34:FB:A5:11:E8
         - reception by the Raspberry Pi on interface /dev/hci0
         - simultaneous forwarding to interfaces /dev/hci1, /dev/hci2, /dev/hci3 and emission again
         - reception on the output devices on interfaces 88:C6:26:EE:BC:FE, 30:21:15:54:78:AA, 00:1A:7D:DA:71:13
-
        Once this configuration has been established, the audio streams rely solely on the Bluetooth controllers and PulseAudio.
-
-
 In order to verify the proper Bluetooth and PulseAudio configuration, these commands could be executed:
 This configuration is erased at shutdown and rewrittent at boot, it is therefore important to verify it.
-
     # verify that the bluetooth controller /dev/hci0 has been set to sink audio mode
     check_output("hciconfig hci0 class | grep -q 0x200420", shell=True)
-
     # verify that the combined sink
     check_output("pactl list sinks | grep -q bluebox_combined", shell=True)
-
 The Bluebox may not work properly if an audio cable is wired in when it boots.
 """
 
@@ -130,7 +119,6 @@ def before_request():
 def after_request(response):
     """
     Log results after request.
-
     Args: response (flask.Response)
     Returns: response (flask.Response)
     """
@@ -162,7 +150,6 @@ def scan_for_bluetooth_devices():
     The scan cannot distinguish output devices (e.g. Bluetooth speakers) from input devices (e.g. smartphones).
     During our tests, the scan also detected LE Bluetooth devices.
     Sometimes a device name cannot be retrieved, so it is marked <unknown>.
-
     Returns:
         a JSON array of the devices found, for instance
         [
@@ -172,7 +159,7 @@ def scan_for_bluetooth_devices():
         ]
     """
     bluetooth.scan()
-    found_devices = bluetooth.get_available_devices()
+    found_devices = bluetooth.get_available_devices(unique_values=True)
     return found_devices, 200
 
 
@@ -182,7 +169,6 @@ def get_devices():
     """
     Retrieves currently connected bluetooth devices.
     The scan cannot distinguish output devices (e.g. Bluetooth speakers) from input devices (e.g. smartphones).
-
     Returns:
         a JSON array of the devices found, for instance
         [
@@ -198,7 +184,6 @@ def get_devices():
 def connect_to_device(target, mac_addr):
     """
     Connects controller X to a MAC address. By convention, the controller 0 is reserved for the input device.
-
     Args:
         mac_addr (str)   : a MAC address, like 67:A8:88:C6:26:C3
     Returns:
@@ -296,7 +281,6 @@ def reset(target):
     Disconnect or remove the input device i.e. /dev/hci0
     Disconnect or remove all output devices i.e. /dev/hci1, /dev/hci2, /dev/hci3,...
     without disconneting the input device.
-
     Returns:
         "OK" with status HTTP 200
         "Error" with status HTTP 500
@@ -387,7 +371,6 @@ def is_device_paired(mac_addr):
 def send_command(process, command, wait_seconds=0):
     """
     Sends a command to a currently opened process and waits for x seconds.
-
     Args:
         process (subprocess.Process) : a bluetoothctl process
         command (str)                : a command understood by bluetoothctl
@@ -431,7 +414,7 @@ class NoAvailableControllersError(Exception):
 # run as ./app.py
 print(f"BlueBox server launched.\nExecute `tail -f {LOGFILE}` to see logs")
 print(f"Found {len(controllers)} controllers: {controllers}")
-devices_at_init = bluetooth.get_connected_devices()
+devices_at_init = bluetooth.get_connected_devices(unique_values=True)
 print(f"Found {len(devices_at_init)} devices: {devices_at_init}")
 if len(devices_at_init)>0:
     reset("output")
@@ -440,6 +423,6 @@ if len(devices_at_init)>0:
 print()
 if __name__ == '__main__':
     from sys import argv
-    app.run(host=argv[1]) if len(argv)>1 else app.run(host="192.168.0.52")
+    app.run(host=argv[1]) if len(argv)>1 else app.run(host="192.168.0.137")
 # or run with
 # flask run --host "$(hostname -I | cut -d ' ' -f 1)"
