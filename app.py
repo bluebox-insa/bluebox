@@ -191,6 +191,7 @@ def connect_to_device(target, mac_addr):
         "Error" with status HTTP 500
     """
     global connections
+    global bluetooth
 
     try:
 
@@ -202,7 +203,7 @@ def connect_to_device(target, mac_addr):
 
         #handle  bt connection
         if is_input:
-            bluetooth.connect(mac_addr=mac_addr, adapter_idx=0)
+            bluetooth.connect(mac_addr, adapter_idx=0)
         else:
             device_connection(mac_addr=mac_addr ,controller_addr=controllers[controller_index])
         
@@ -215,6 +216,7 @@ def connect_to_device(target, mac_addr):
         return "", 200
 
     except Exception as e:
+        '''
         if proc is not None:
             # get detailed output from bluetoothctl
             out, err = proc.communicate()
@@ -239,6 +241,7 @@ def connect_to_device(target, mac_addr):
             #    print("FAILED TO MATCH")
             if err:
                 logger.error(err)
+        '''
         logger.exception(e)
         return "", 500
 
