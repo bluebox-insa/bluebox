@@ -177,8 +177,11 @@ def scan_for_bluetooth_devices():
             {'name': '<unknown>',   'mac_address': '67:A8:88:C6:26:C3'}
         ]
     """
+    logger.info("scan processing")
     bluetooth.scan()
     found_devices = list(set(bluetooth.get_available_devices()))
+    logger.info(found_devices)
+
     return found_devices, 200
 
 
