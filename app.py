@@ -199,20 +199,9 @@ def connect_to_device(target, mac_addr):
         if mac_addr in connections.values():
             return "device already connected", 200
 
-        proc = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
-        send_command(proc, f"select {controllers[controller_index]}")
-
-        # scan
-        send_command(proc, "scan on", 3)
-
-        # pair
-        if {"controller_index" : controller_index, "mac_addr" : mac_addr} not in pairings:
-            send_command(proc, f"pair {mac_addr}", 3)
-            send_command(proc, "yes", 3) if is_input else None
-
-        # connect
-        send_command(proc, f"connect {mac_addr}", 3)
-        assert is_device_connected(mac_addr), f"connecting device {mac_addr} failed"
+        #handle  bt connection
+        device_connection(mac_addr=mac_addr ,controller_addr=controllers[controller_index])
+        
 
         # append to connections and pairings
         connections[controller_index] = mac_addr
@@ -404,6 +393,61 @@ def get_available_controller(mac_addr, is_input=False):
     logger.info(f"Found available controller {controller_index}")
     return controller_index
 
+#------------------------------------
+#          New bt connection functions
+#------------------------------------
+
+def select_controller(bt_process,controller_addr):
+    bt_process.stdin.write("select "+controller_addr+"\n")
+    bt_process.stdin.flush()
+
+def discover_device(bt_process,mac_addr):
+    bt_process.stdin.write("scan on\n")
+    bt_process.stdin.flush()
+    for line in iter(bt_process.stdout.readline,"\n"):
+        if mac_addr in line:
+            print("DEVICE SCAN IS OK")
+            break
+
+
+def connect_device(bt_process,mac_addr):
+    bt_process.stdin.write("connect "+mac_addr+"\n")
+    bt_process.stdin.flush()
+    for line in iter(bt_process.stdout.readline,"\n"):
+        if "Connection successful" in line:
+            print("DEVICE IS CONNECTED")
+            bt_process.stdin.write("exit\n")
+            bt_process.stdin.flush()
+            break
+
+def pair_device(bt_process,mac_addr):
+    bt_process.stdin.write("pair "+mac_addr+"\n")
+    bt_process.stdin.flush()
+    for line in iter(bt_process.stdout.readline,"\n"):
+        if "Pairing successful" in line:
+            print("DEVICE PAIR OK")
+            break
+        if "org.bluez.Error.AlreadyExists" in line:
+            #need to remove device
+            remove_device(bt_process,mac_addr)
+            #reload pairing mode
+            bt_process.stdin.write("pair "+mac_addr+"\n")
+            bt_process.stdin.flush()
+            
+
+def remove_device(bt_process,mac_addr):
+    bt_process.stdin.write("remove "+mac_addr+"\n")
+    bt_process.stdin.flush()
+    for line in iter(bt_process.stdout.readline,"\n"):
+        if "Device has been removed" in line:
+            print("DEVICE has been removed")
+            break
+def device_connection(mac_addr,controller_addr):
+    process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,text=True)
+    select_controller(process,controller_addr)
+    discover_device(process,mac_addr)
+    pair_device(process,mac_addr)
+    connect_device(process,mac_addr)
 
 class NoAvailableControllersError(Exception):
     pass
