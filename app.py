@@ -172,7 +172,7 @@ def scan_for_bluetooth_devices():
         ]
     """
     bluetooth.scan()
-    found_devices = bluetooth.get_available_devices(unique_values=True)
+    found_devices = bluetooth.get_available_devices()
     return found_devices, 200
 
 
@@ -431,7 +431,7 @@ class NoAvailableControllersError(Exception):
 # run as ./app.py
 print(f"BlueBox server launched.\nExecute `tail -f {LOGFILE}` to see logs")
 print(f"Found {len(controllers)} controllers: {controllers}")
-devices_at_init = bluetooth.get_connected_devices(unique_values=True)
+devices_at_init = bluetooth.get_connected_devices()
 print(f"Found {len(devices_at_init)} devices: {devices_at_init}")
 if len(devices_at_init)>0:
     reset("output")
@@ -440,6 +440,6 @@ if len(devices_at_init)>0:
 print()
 if __name__ == '__main__':
     from sys import argv
-    app.run(host=argv[1]) if len(argv)>1 else app.run(host="192.168.0.137")
+    app.run(host=argv[1]) if len(argv)>1 else app.run(host="192.168.0.52")
 # or run with
 # flask run --host "$(hostname -I | cut -d ' ' -f 1)"
