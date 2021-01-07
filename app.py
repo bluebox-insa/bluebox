@@ -202,7 +202,7 @@ def connect_to_device(target, mac_addr):
 
         #handle  bt connection
         if is_input:
-            smartphone_connection(mac_addr=mac_addr)
+            bluetooth.connect(mac_addr=mac_addr, adapter_idx=0)
         else:
             device_connection(mac_addr=mac_addr ,controller_addr=controllers[controller_index])
         
@@ -463,11 +463,6 @@ def device_connection(mac_addr,controller_addr):
     pair_device(process,mac_addr)
     connect_device(process,mac_addr)
 
-def smartphone_connection(mac_addr):
-    global intern_btProcess
-    discover_device(intern_btProcess,mac_addr)
-    pair_device(intern_btProcess,mac_addr)
-    connect_device(intern_btProcess,mac_addr)
 
 
 
@@ -490,12 +485,6 @@ print()
 
 
 if __name__ == '__main__':
-    #start scanning with intern bt 
-    intern_btProcess = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,text=True)
-    intern_btProcess.stdin.write("select "+controllers[0]+"\n")
-    intern_btProcess.stdin.flush()
-    intern_btProcess.stdin.write("scan on\n")
-    intern_btProcess.stdin.flush()
 
     from sys import argv
     app.run(host=argv[1]) if len(argv)>1 else app.run(host="192.168.0.137")
