@@ -425,17 +425,23 @@ def pair_device(bt_process,mac_addr):
     bt_process.stdin.write("pair "+mac_addr+"\n")
     bt_process.stdin.flush()
     for line in iter(bt_process.stdout.readline,"\n"):
-        
+     
+            
         if "Pairing successful" in line:
             print("DEVICE PAIR OK")
             break
-        if "org.bluez.Error.AlreadyExists" in line:
+        elif "org.bluez.Error.AlreadyExists" in line:
             #need to remove device
             remove_device(bt_process,mac_addr)
             #reload pairing mode
             bt_process.stdin.write("pair "+mac_addr+"\n")
             bt_process.stdin.flush()
-            
+        elif "Confirm passkey" in line:
+            print("PAIRING WITH SMARTPHONE")
+            bt_process.stdin.write("yes\n")
+            bt_process.stdin.flush()
+
+    
 
 def remove_device(bt_process,mac_addr):
     bt_process.stdin.write("remove "+mac_addr+"\n")
@@ -471,12 +477,7 @@ if len(devices_at_init)>0:
     sleep(3)
     reset("input")
 print()
-#start internal controller scan
-process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,text=True)
-select_controller(process,controller_addr=controllers[0])
-process.stdin.write("scan on\n")
-process.stdin.flush()
-process.stdout.close()
+
 
 if __name__ == '__main__':
     from sys import argv
