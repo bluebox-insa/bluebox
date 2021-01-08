@@ -183,9 +183,9 @@ log "Pasting asoundrc configuration"
 
 log "Installing and configuring Supervisor"
     apt-get install -qq supervisor
-    supervisord_conf='
+    supervisord_conf="
 [program:launch_bluebox_server]
-command = /home/pi/bluebox/app.py $(hostname -I)
+command = /home/pi/bluebox/app.py $(/bin/hostname -I)
 autostart = true
 autorestart = true
 
@@ -194,7 +194,7 @@ command = /bin/hciconfig hci0 class 0x200420
 
 [program:kill_piwiz]
 command = /usr/bin/sudo /usr/bin/pkill piwiz
-'
+"
     echo "$supervisord_conf" >> /etc/supervisor/supervisord.conf
 
 
