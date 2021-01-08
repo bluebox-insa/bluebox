@@ -203,7 +203,8 @@ def connect_to_device(target, mac_addr):
 
         #handle  bt connection
         if is_input:
-            bluetooth.connect(mac_addr, adapter_idx=0)
+            #bluetooth.connect(mac_addr)
+            device_connection(mac_addr=mac_addr ,controller_addr=controllers[controller_index])
         else:
             device_connection(mac_addr=mac_addr ,controller_addr=controllers[controller_index])
         
@@ -318,11 +319,12 @@ def reset(target):
                     #send_command(proc, f"disconnect {d['mac_address']}", 1)
                 connections.pop(d['mac_address']) if d['mac_address'] in connections.keys() else None
             sleep(1)
-        
-        # devices = bluetooth.get_connected_devices()
-        # assert len(devices) == 0, f"devices is of size {len(devices)} but was expected to be empty."
-        # connections.clear()
         '''
+        devices = bluetooth.get_connected_devices()
+        
+        assert len(devices) == 0, f"devices is of size {len(devices)} but was expected to be empty. Error reset with {devices}"
+        connections.clear()
+        
         return "", 200
 
     except Exception as e:
@@ -426,7 +428,7 @@ def discover_device(bt_process,mac_addr):
     bt_process.stdin.flush()
     for line in iter(bt_process.stdout.readline,"\n"):
         if mac_addr in line:
-            print("DEVICE SCAN IS OK")
+            logger.info("DEVICE SCAN IS OK")
             break
 
 
@@ -434,12 +436,13 @@ def connect_device(bt_process,mac_addr):
     bt_process.stdin.write("connect "+mac_addr+"\n")
     bt_process.stdin.flush()
     for line in iter(bt_process.stdout.readline,"\n"):
-        
+        #logger.info(f"{line}")
         if "Connection successful" in line:
             logger.info(f"DEVICE {mac_addr} IS CONNECTED")
             bt_process.stdin.write("exit\n")
             bt_process.stdin.flush()
             break
+        
 
 def disconnect_device(bt_process,mac_addr):
     bt_process.stdin.write("disconnect "+mac_addr+"\n")
@@ -453,8 +456,7 @@ def pair_device(bt_process,mac_addr):
     bt_process.stdin.write("pair "+mac_addr+"\n")
     bt_process.stdin.flush()
     for line in iter(bt_process.stdout.readline,"\n"):
-     
-            
+        logger.info(f"{line}") 
         if "Pairing successful" in line:
             logger.info(f"DEVICE {mac_addr} PAIR OK")
             break
@@ -464,11 +466,10 @@ def pair_device(bt_process,mac_addr):
             #reload pairing mode
             bt_process.stdin.write("pair "+mac_addr+"\n")
             bt_process.stdin.flush()
-        elif "Confirm passkey" in line:
-            logger.info(f"PAIRING {mac_addr} WITH SMARTPHONE")
+        elif "[agent] Confirm passkey" in line:
+            logger.info(f"YES PAIRING CONFIRMATION SENT TO {mac_addr}")
             bt_process.stdin.write("yes\n")
             bt_process.stdin.flush()
-
     
 
 def remove_device(bt_process,mac_addr):
