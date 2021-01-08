@@ -191,6 +191,7 @@ def connect_to_device(target, mac_addr):
         "Error" with status HTTP 500
     """
     global connections
+    global bluetooth
 
     try:
 
