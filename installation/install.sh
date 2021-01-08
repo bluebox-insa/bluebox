@@ -185,7 +185,7 @@ log "Installing and configuring Supervisor"
     apt-get install -qq supervisor
     supervisord_conf='
 [program:launch_bluebox_server]
-command = /home/pi/bluebox/app.py
+command = /home/pi/bluebox/app.py 
 autostart = true
 autorestart = true
 
