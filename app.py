@@ -300,11 +300,14 @@ def reset(target):
         devices = bluetooth.get_connected_devices(encode=False, unique_values=True)
         for d in devices:
             for c in controller_indexes:
-                send_command(proc, f"select {c}")
+                select_controller(bt_process=proc,controller_addr=c)
+                #send_command(proc, f"select {c}")
                 if remove_devices:
-                    send_command(proc, f"remove {d['mac_address']}", 1)
+                    remove_device(bt_process=proc,mac_addr=d['mac_address'])
+                    #send_command(proc, f"remove {d['mac_address']}", 1)
                 else:
-                    send_command(proc, f"disconnect {d['mac_address']}", 1)
+                    disconnect_device(bt_process=proc,mac_addr=d['mac_address'])
+                    #send_command(proc, f"disconnect {d['mac_address']}", 1)
                 connections.pop(d['mac_address']) if d['mac_address'] in connections.keys() else None
             sleep(1)
 
@@ -430,6 +433,14 @@ def connect_device(bt_process,mac_addr):
             bt_process.stdin.flush()
             break
 
+def disconnect_device(bt_process,mac_addr):
+    bt_process.stdin.write("disconnect "+mac_addr+"\n")
+    bt_process.stdin.flush()
+    for line in iter(bt_process.stdout.readline,"\n"):
+        if "Successful disconnected" in line:
+            print("DEVICE IS DISCONNECTED")
+            break
+
 def pair_device(bt_process,mac_addr):
     bt_process.stdin.write("pair "+mac_addr+"\n")
     bt_process.stdin.flush()
@@ -459,6 +470,7 @@ def remove_device(bt_process,mac_addr):
         if "Device has been removed" in line:
             print("DEVICE has been removed")
             break
+
 def device_connection(mac_addr,controller_addr):
     process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,text=True)
     select_controller(process,controller_addr)
