@@ -460,7 +460,7 @@ def pair_device(bt_process,mac_addr):
     bt_process.stdin.write("pair "+mac_addr+"\n")
     bt_process.stdin.flush()
     for line in iter(bt_process.stdout.readline,"\n"):
-        logger.info(f"{line}") 
+        
         if "Pairing successful" in line:
             logger.info(f"DEVICE {mac_addr} PAIR OK")
             break
@@ -469,10 +469,6 @@ def pair_device(bt_process,mac_addr):
             remove_device(bt_process,mac_addr)
             #reload pairing mode
             bt_process.stdin.write("pair "+mac_addr+"\n")
-            bt_process.stdin.flush()
-        elif "[agent] Confirm passkey" in line:
-            logger.info(f"YES PAIRING CONFIRMATION SENT TO {mac_addr}")
-            bt_process.stdin.write("yes\n")
             bt_process.stdin.flush()
     
 
@@ -494,7 +490,7 @@ def device_connection(mac_addr,controller_addr,is_sink):
     select_controller(process,controller_addr)
     if is_sink:
         #connect to speaker
-        sink_connection(mac_addr,controller_addr)
+        sink_connection(mac_addr,controller_addr,process)
     else:
         #avoid pin request mode
         select_no_pin_agent_mode(bt_process=process)
