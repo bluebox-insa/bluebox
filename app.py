@@ -416,7 +416,7 @@ def get_available_controller(mac_addr, is_input=False):
     if controller_index in connections.keys():
         raise NoAvailableControllersError(f"controllers[{controller_index}] is already connected to {connections[controller_index]}")
         # send_command(proc, f"disconnect {connections[controller_index]}", 5)
-    logger.info(f"Found available controller {controller_index}")
+    logger.info(f"Found available controller {controller_index} controller_list is {controllers}")
     return controller_index
 
 #------------------------------------
