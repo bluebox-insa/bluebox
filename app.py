@@ -202,12 +202,16 @@ def connect_to_device(target, mac_addr):
             return "device already connected", 200
 
         #handle  bt connection
+        is_sink=not is_input
+        device_connection(mac_addr=mac_addr ,controller_addr=controllers[controller_index],is_sink=is_sink)
+        
+        """
         if is_input:
             #bluetooth.connect(mac_addr)
-            device_connection(mac_addr=mac_addr ,controller_addr=controllers[controller_index])
+            device_connection(mac_addr=mac_addr ,controller_addr=controllers[controller_index],is_sink=is_sink)
         else:
-            device_connection(mac_addr=mac_addr ,controller_addr=controllers[controller_index])
-        
+            device_connection(mac_addr=mac_addr ,controller_addr=controllers[controller_index],is_sink=is_sink)
+        """
 
         # append to connections and pairings
         connections[controller_index] = mac_addr
@@ -322,7 +326,7 @@ def reset(target):
         '''
         devices = bluetooth.get_connected_devices()
         
-        assert len(devices) == 0, f"devices is of size {len(devices)} but was expected to be empty. Error reset with {devices}"
+        #assert len(devices) == 0, f"devices is of size {len(devices)} but was expected to be empty. Error reset with {devices}"
         connections.clear()
         
         return "", 200
@@ -479,13 +483,58 @@ def remove_device(bt_process,mac_addr):
         if "Device has been removed" in line:
             logger.info(f"DEVICE {mac_addr} has been removed")
             break
-
-def device_connection(mac_addr,controller_addr):
-    process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,text=True)
-    select_controller(process,controller_addr)
+        
+def sink_connection(mac_addr,controller_addr,process):
     discover_device(process,mac_addr)
     pair_device(process,mac_addr)
     connect_device(process,mac_addr)
+
+def device_connection(mac_addr,controller_addr,is_sink):
+    process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,text=True)
+    select_controller(process,controller_addr)
+    if is_sink:
+        #connect to speaker
+        sink_connection(mac_addr,controller_addr)
+    else:
+        #avoid pin request mode
+        select_no_pin_agent_mode(bt_process=process)
+        #connect to smartphone
+        sink_connection(mac_addr,controller_addr,process)
+
+
+
+#smartphone connection no pin request mode 
+
+def select_no_pin_agent_mode(bt_process):
+    set_agent_off(bt_process)
+    set_agent_noInputOutput(bt_process)
+    set_default_agent(bt_process)
+    
+
+def set_agent_off(bt_process):
+    bt_process.stdin.write("agent off\n")
+    bt_process.stdin.flush()
+    for line in iter(bt_process.stdout.readline,"\n"):
+        if "Agent unregistered" in line:
+            logger.info(f"AGENT unregistered")
+            break
+
+
+def set_agent_noInputOutput(bt_process):
+    bt_process.stdin.write("agent NoInputNoOutput\n")
+    bt_process.stdin.flush()
+    for line in iter(bt_process.stdout.readline,"\n"):
+        if "Agent registered" in line:
+            logger.info(f"Agent registered")
+            break
+
+def set_default_agent(bt_process):
+    bt_process.stdin.write("default-agent\n")
+    bt_process.stdin.flush()
+    for line in iter(bt_process.stdout.readline,"\n"):
+        if "Default agent request successful" in line:
+            logger.info(f"Default Agent request sucessful")
+            break
 
 #reset functions using bluetoothctl
 def get_device_list(process,controller_addr):
