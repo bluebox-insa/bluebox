@@ -202,11 +202,16 @@ def connect_to_device(target, mac_addr):
             return "device already connected", 200
 
         #handle  bt connection
-        if is_input:
-            bluetooth.connect(mac_addr, adapter_idx=0)
-        else:
-            device_connection(mac_addr=mac_addr ,controller_addr=controllers[controller_index])
+        is_sink=not is_input
+        device_connection(mac_addr=mac_addr ,controller_addr=controllers[controller_index],is_sink=is_sink)
         
+        """
+        if is_input:
+            #bluetooth.connect(mac_addr)
+            device_connection(mac_addr=mac_addr ,controller_addr=controllers[controller_index],is_sink=is_sink)
+        else:
+            device_connection(mac_addr=mac_addr ,controller_addr=controllers[controller_index],is_sink=is_sink)
+        """
 
         # append to connections and pairings
         connections[controller_index] = mac_addr
@@ -284,12 +289,20 @@ def reset(target):
     global current_controller, connections
 
     try:
+        #select controller
         if target == "input":
             controller_indexes = [controllers[0]]
         else:
             controller_indexes = controllers[1:]
-        logger.info(f"indexes to delete = {controller_indexes}")
+        logger.info(f"chosen controllers = {controller_indexes}")
 
+        #reset controllers
+        for controller_addr in controller_indexes:
+            logger.info(f"Start RESET controller : {controller_addr}")
+            reset_controller(controller_addr=controller_addr)
+            logger.info(f"End RESET controller : {controller_addr}")
+
+        '''
         try:
             remove_devices = request.args.get("hard") is not None
         except RuntimeError:
@@ -300,18 +313,22 @@ def reset(target):
         devices = bluetooth.get_connected_devices(encode=False, unique_values=True)
         for d in devices:
             for c in controller_indexes:
-                send_command(proc, f"select {c}")
+                select_controller(bt_process=proc,controller_addr=c)
+                #send_command(proc, f"select {c}")
                 if remove_devices:
-                    send_command(proc, f"remove {d['mac_address']}", 1)
+                    remove_device(bt_process=proc,mac_addr=d['mac_address'])
+                    #send_command(proc, f"remove {d['mac_address']}", 1)
                 else:
-                    send_command(proc, f"disconnect {d['mac_address']}", 1)
+                    disconnect_device(bt_process=proc,mac_addr=d['mac_address'])
+                    #send_command(proc, f"disconnect {d['mac_address']}", 1)
                 connections.pop(d['mac_address']) if d['mac_address'] in connections.keys() else None
             sleep(1)
-
-        # devices = bluetooth.get_connected_devices()
-        # assert len(devices) == 0, f"devices is of size {len(devices)} but was expected to be empty."
-        # connections.clear()
-
+        '''
+        devices = bluetooth.get_connected_devices()
+        
+        #assert len(devices) == 0, f"devices is of size {len(devices)} but was expected to be empty. Error reset with {devices}"
+        connections.clear()
+        
         return "", 200
 
     except Exception as e:
@@ -399,7 +416,7 @@ def get_available_controller(mac_addr, is_input=False):
     if controller_index in connections.keys():
         raise NoAvailableControllersError(f"controllers[{controller_index}] is already connected to {connections[controller_index]}")
         # send_command(proc, f"disconnect {connections[controller_index]}", 5)
-    logger.info(f"Found available controller {controller_index}")
+    logger.info(f"Found available controller {controller_index} controller_list is {controllers}")
     return controller_index
 
 #------------------------------------
@@ -415,7 +432,7 @@ def discover_device(bt_process,mac_addr):
     bt_process.stdin.flush()
     for line in iter(bt_process.stdout.readline,"\n"):
         if mac_addr in line:
-            print("DEVICE SCAN IS OK")
+            logger.info("DEVICE SCAN IS OK")
             break
 
 
@@ -423,21 +440,29 @@ def connect_device(bt_process,mac_addr):
     bt_process.stdin.write("connect "+mac_addr+"\n")
     bt_process.stdin.flush()
     for line in iter(bt_process.stdout.readline,"\n"):
-        
+        #logger.info(f"{line}")
         if "Connection successful" in line:
-            print("DEVICE IS CONNECTED")
+            logger.info(f"DEVICE {mac_addr} IS CONNECTED")
             bt_process.stdin.write("exit\n")
             bt_process.stdin.flush()
+            break
+        
+
+def disconnect_device(bt_process,mac_addr):
+    bt_process.stdin.write("disconnect "+mac_addr+"\n")
+    bt_process.stdin.flush()
+    for line in iter(bt_process.stdout.readline,"\n"):
+        if "Successful disconnected" in line:
+            logger.info(f"DEVICE {mac_addr} IS DISCONNECTED")
             break
 
 def pair_device(bt_process,mac_addr):
     bt_process.stdin.write("pair "+mac_addr+"\n")
     bt_process.stdin.flush()
     for line in iter(bt_process.stdout.readline,"\n"):
-     
-            
+        
         if "Pairing successful" in line:
-            print("DEVICE PAIR OK")
+            logger.info(f"DEVICE {mac_addr} PAIR OK")
             break
         elif "org.bluez.Error.AlreadyExists" in line:
             #need to remove device
@@ -445,11 +470,6 @@ def pair_device(bt_process,mac_addr):
             #reload pairing mode
             bt_process.stdin.write("pair "+mac_addr+"\n")
             bt_process.stdin.flush()
-        elif "Confirm passkey" in line:
-            print("PAIRING WITH SMARTPHONE")
-            bt_process.stdin.write("yes\n")
-            bt_process.stdin.flush()
-
     
 
 def remove_device(bt_process,mac_addr):
@@ -457,14 +477,90 @@ def remove_device(bt_process,mac_addr):
     bt_process.stdin.flush()
     for line in iter(bt_process.stdout.readline,"\n"):
         if "Device has been removed" in line:
-            print("DEVICE has been removed")
+            logger.info(f"DEVICE {mac_addr} has been removed")
             break
-def device_connection(mac_addr,controller_addr):
-    process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,text=True)
-    select_controller(process,controller_addr)
+        
+def sink_connection(mac_addr,controller_addr,process):
     discover_device(process,mac_addr)
     pair_device(process,mac_addr)
     connect_device(process,mac_addr)
+
+def device_connection(mac_addr,controller_addr,is_sink):
+    process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,text=True)
+    select_controller(process,controller_addr)
+    if is_sink:
+        #connect to speaker
+        sink_connection(mac_addr,controller_addr,process)
+    else:
+        #avoid pin request mode
+        select_no_pin_agent_mode(bt_process=process)
+        #connect to smartphone
+        sink_connection(mac_addr,controller_addr,process)
+
+
+
+#smartphone connection no pin request mode 
+
+def select_no_pin_agent_mode(bt_process):
+    set_agent_off(bt_process)
+    set_agent_noInputOutput(bt_process)
+    set_default_agent(bt_process)
+    
+
+def set_agent_off(bt_process):
+    bt_process.stdin.write("agent off\n")
+    bt_process.stdin.flush()
+    for line in iter(bt_process.stdout.readline,"\n"):
+        if "Agent unregistered" in line:
+            logger.info(f"AGENT unregistered")
+            break
+
+
+def set_agent_noInputOutput(bt_process):
+    bt_process.stdin.write("agent NoInputNoOutput\n")
+    bt_process.stdin.flush()
+    for line in iter(bt_process.stdout.readline,"\n"):
+        if "Agent registered" in line:
+            logger.info(f"Agent registered")
+            break
+
+def set_default_agent(bt_process):
+    bt_process.stdin.write("default-agent\n")
+    bt_process.stdin.flush()
+    for line in iter(bt_process.stdout.readline,"\n"):
+        if "Default agent request successful" in line:
+            logger.info(f"Default Agent request sucessful")
+            break
+
+#reset functions using bluetoothctl
+def get_device_list(process,controller_addr):
+    process.stdin.write("devices \n")
+    process.stdin.flush()
+    process.stdin.write("help \n")
+    process.stdin.flush()
+    p = re.compile(r'(?:[0-9a-fA-F]:?){12}')
+    device_list=[]
+    for line in iter(process.stdout.readline,"\n"):
+        if "help" in line:
+            break
+        if not len(re.findall(p, line)):
+            #empty list
+            pass
+        else:
+            device_list.append(re.findall(p, line)[0])
+    device_list=[mac_addr for mac_addr in device_list if mac_addr!=controller_addr]
+    logger.info(f"list of devices to remove and/or disconnect {device_list}")
+    return device_list
+
+def reset_controller(controller_addr):
+    process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,text=True)
+    select_controller(process,controller_addr)
+    device_list=get_device_list(process=process,controller_addr=controller_addr)
+    for mac_addr in device_list:
+        #try to disconnect device 
+        disconnect_device(bt_process=process,mac_addr=mac_addr)
+        #try to remove device
+        remove_device(bt_process=process,mac_addr=mac_addr)
 
 
 
