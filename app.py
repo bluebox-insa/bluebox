@@ -534,7 +534,7 @@ def set_default_agent(bt_process):
 
 #reset functions using bluetoothctl
 def get_device_list(process,controller_addr):
-    process.stdin.write("devices \n")
+    process.stdin.write("paired-devices \n")
     process.stdin.flush()
     process.stdin.write("help \n")
     process.stdin.flush()
