@@ -99,20 +99,14 @@ def before_request():
     """
     global controllers
 
-    logger.info("%s %s" % (request.method, request.full_path))
+    logger.info(f"{request.method} {request.full_path}")
 
+    # refresh the list of controllers
     old_controllers = controllers
     controllers = subprocess.check_output('hcitool dev | grep -o \"[[:xdigit:]:]\{11,17\}\"', shell=True).decode().split('\n')[:-1]
     controllers.reverse()
     if controllers != old_controllers:
         logger.info(f"controllers updated to {controllers}")
-
-    #on vérifie la correspondance entre connections et bluetooth.get_connected_devices
-    # bluetool_devices = bluetooth.get_connected_devices()
-    # compare lengths
-    # assert len(connections) == len(bluetool_devices), f"len(connections) = {len(devices)} is not equal to len(bluetool_devices) = {len(bluetool_devices)} as expected"
-    # for conn in connections:
-    #     assert is_mac_addr_in_devices(conn["device_mac"], bluetool_devices), f"bluetool_devices = {bluetool_devices} doesn't contain conn[device_mac] = {conn["device_mac"]} as expected"
 
 
 @app.after_request
@@ -131,7 +125,8 @@ def after_request(response):
         logger.error(f"==> Error {response.status_code}\n")
         log_contents = log_capture_string.getvalue()
         response.data = log_contents
-    # log_capture_string.close()
+        # when closing the application, we should close the stream with
+        # log_capture_string.close()
     return response
 
 
@@ -197,7 +192,6 @@ def connect_to_device(target, mac_addr):
     global bluetooth
 
     try:
-
         is_input = target == "input"
         controller_index = get_available_controller(mac_addr, is_input)
 
@@ -205,9 +199,8 @@ def connect_to_device(target, mac_addr):
             return "device already connected", 200
 
         #handle  bt connection
-        is_sink=not is_input
+        is_sink = not is_input
         device_connection(mac_addr=mac_addr ,controller_addr=controllers[controller_index],is_sink=is_sink)
-        
         
 
         # append to connections and pairings
@@ -310,46 +303,6 @@ def beep():
 #------------------------------------
 #          useful functions
 #------------------------------------
-def is_mac_addr_in_devices(mac_addr, devices):
-    """
-    Args:
-        mac_addr (str)   : a MAC address, like 67:A8:88:C6:26:C3
-        devices  (array) : a JSON array of Bluetooth devices, returned by bluetool
-                           (for an obscure reason, all string values are encoded in binary)
-    Returns:
-        True / False
-    """
-    logger.info(f"Searching {mac_addr} in size {len(devices)} array {devices}")
-    for d in devices:
-        if mac_addr.encode() in d.values():
-            logger.info(f"is {mac_addr} in array : True")
-            return True
-        else:
-            logger.info(f"is {mac_addr} in array : False")
-    return False
-
-def is_device_connected(mac_addr):
-    return is_mac_addr_in_devices(mac_addr, bluetooth.get_connected_devices())
-
-def is_device_paired(mac_addr):
-    return is_mac_addr_in_devices(mac_addr, bluetooth.get_paired_devices())
-
-def send_command(process, command, wait_seconds=0):
-    """
-    Sends a command to a currently opened process and waits for x seconds.
-    Args:
-        process (subprocess.Process) : a bluetoothctl process
-        command (str)                : a command understood by bluetoothctl
-        wait_seconds (int)           : number of seconds to wait
-    """
-    logger.info(command)
-    process.stdin.write(command + "\n")
-    process.stdin.flush()
-    if wait_seconds > 0:
-        logger.info(f"Waiting {wait_seconds} seconds...")
-        sleep(wait_seconds)
-
-
 def get_available_controller(mac_addr, is_input=False):
     """
         Re
@@ -376,11 +329,18 @@ def get_available_controller(mac_addr, is_input=False):
 #          New bt connection functions
 #------------------------------------
 
-def select_controller(bt_process,controller_addr):
-    bt_process.stdin.write("select "+controller_addr+"\n")
+def select_controller(bt_process, controller_addr):
+    """
+    Sends a command to a currently opened process to select a specific controller
+    Args:
+        bt_process (subprocess.Process) : a bluetoothctl process
+        controller_addr (str)           : MAC address of a controller
+    """
+
+   bt_process.stdin.write("select "+controller_addr+"\n")
     bt_process.stdin.flush()
 
-def discover_device(bt_process,mac_addr):
+def discover_device(bt_process, mac_addr):
     bt_process.stdin.write("scan on\n")
     bt_process.stdin.flush()
     for line in iter(bt_process.stdout.readline,"\n"):
