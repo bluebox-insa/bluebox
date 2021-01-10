@@ -1,16 +1,18 @@
 # Bluebox MVP :headphones::zap:
 
+<img src="./installation/images/bluebox_logo.jpeg" width="150" height="150" style = text-align:center;>
 
 Turn your **Raspberry Pi** into a **Bluetooth hub** to play your music through multiple bluetooth **synced** speakers 🔊🔊🔊.
-![Bluebox Application](./installation/images/bluebox_logo.jpeg)
-1. [Demonstration](<#Demonstration 📱>)
-1. [Requirements 📜](<#Requirements 📜>)
-1. [Your path to multi-devices sound on Linux ! 🔥](./installation/README.md)
-1. [Run from a fresh Raspberry install 🐍](<#Run from a fresh Raspberry install 🐍>)
-1. [Comments](<#Comments>)
 
-## Demonstration 📱
-![Bluebox android application and running server demo](./demonstration/video/Test_Bluebox_Android.gif)
+1. [Demo](<#Demo 📱>)
+2. [Requirements 📜](<#Requirements 📜>)
+3. [Your path to multi-devices sound on Linux ! 🔥](./installation/README.md)
+4. [Run from a fresh Raspberry install 🐍](<#Run from a fresh Raspberry install 🐍>)
+5. [Comments](<#Comments>)
+
+## Demo 📱
+
+<img src="./demonstration/video/Test_Bluebox_Android.gif" width="300" height="640" style = text-align:center;>
 
 ## Requirements 📜
 - Raspberry pi (model 3B used)
@@ -33,6 +35,9 @@ cd bluetool && sudo make install
 # to configure and launch the server, please reboot
 sudo reboot now
 ```
+
+:ambulance: See [here](./latency-optimization/README.md) to reduce the latency between your speakers
+
 ## Comments 
 - To configure the raspberry using bluebox app (https://github.com/bluebox-insa/bluebox-android-app), the smartphone and the raspberry must be connected on the same network. Please check ip address of your raspberry (same as flask server).
 - Last version of the Bluebox application is also available in this repo : https://github.com/bluebox-insa/bluebox-android-app
