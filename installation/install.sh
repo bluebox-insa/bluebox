@@ -296,8 +296,6 @@ set-default-sink bluebox_combined
     "
     echo "$pulseaudio_conf" > /etc/pulse/default.pa
     sudo -u pi pulseaudio --start
-    # systemctl --user status pulseaudio
-    # systemctl --user enable pulseaudio
 
 
 log "Adding pi and root to pulseaudio user groups (this is not necessary but will be if we want to turn pulseaudio into a service)"
@@ -326,7 +324,8 @@ log "Pasting asoundrc configuration"
 
 log "Installing and configuring Supervisor"
     apt-get install -qq supervisor
-    supervisord_conf="; supervisor config file
+    supervisord_conf="
+; supervisor config file
 
 [unix_http_server]
 file=/var/run/supervisor.sock   ; (the path to the socket file)
@@ -356,7 +355,7 @@ serverurl=unix:///var/run/supervisor.sock ; use a unix:// URL  for a unix socket
 files = /etc/supervisor/conf.d/*.conf
 
 [program:launch_bluebox_server]
-command = /home/pi/bluebox/app.py $(/bin/hostname -I)
+command = /home/pi/bluebox/app.py
 autostart = true
 autorestart = true
 
@@ -379,6 +378,17 @@ log "Installing Python dependencies for the BlueBox server"
 log "Installing Python dependencies for Bluetool"
     apt-get install -qq libcairo2-dev
 
-
-log "Installation success."
-log "To complete the installation, please reboot the Raspberry Pi"
+log "Installing RaspAP"
+    log "\033[1;31mTHIS WILL ERASE YOUR WI-FI CONFIGURATION AND YOUR RASPBERRY WONT BE ACCESSIBLE OVER WI-FI ANYMORE"
+    yesNo=""
+    while [[ $yesNo != "yes" && $yesNo != "no" ]]
+        do read -p "Are you sure you wish to continue (yes/no): " yesNo
+    done
+    if [[ $yesNo == "yes" ]]
+        then log "Installing RaspAP (answer 'yes' to everything)"
+        curl -sL "https://install.raspap.com" | bash
+        log "Installation success."
+    else
+        log "\033[1;31mAbort..."
+        log "\033[1;31mInstallation failed."
+    fi
