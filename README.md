@@ -1,8 +1,14 @@
 # Bluebox MVP :headphones::zap:
 
-<img src="./installation/images/bluebox_logo.jpeg" width="150" height="150" style = text-align:center;>
+<p align="center">
+  <img src="./installation/images/bluebox_logo.jpeg" width="100" height="100">
+</p>
 
 Turn your **Raspberry Pi** into a **Bluetooth hub** to play your music through multiple bluetooth **synced** speakers 🔊🔊🔊.
+
+<p align="center">
+  <img src="./installation/images/architecture_mvp3.jpg">
+</p>
 
 1. [Demo](<#Demo 📱>)
 2. [Requirements 📜](<#Requirements 📜>)
@@ -12,17 +18,15 @@ Turn your **Raspberry Pi** into a **Bluetooth hub** to play your music through m
 
 ## Demo 📱
 
-<img src="./demonstration/video/Test_Bluebox_Android.gif" width="300" height="640" style = text-align:center;>
+<p align="center">
+    <img src="./demonstration/video/Test_Bluebox_Android.gif" width="300" height="640">
+</p>
 
 ## Requirements 📜
 - Raspberry pi (model 3B used)
 - Up to 4 speakers in bluetooth mode
 - 4 bluetooth dongles (tested with Baseus USB Bluetooth adaptateur : [Baseus USB Bluetooth adaptateur on Aliexpress](https://www.aliexpress.com/item/1005001829990800.html?spm=a2g0o.productlist.0.0.18a03959VMyWgE&algo_pvid=7c0e1fa6-38fd-49ef-9d7c-fb7c29c74d0a&algo_expid=7c0e1fa6-38fd-49ef-9d7c-fb7c29c74d0a-0&btsid=2100bdde16101020065588400ef738&ws_ab_test=searchweb0_0,searchweb201602_,searchweb201603_))
-- Smartphone Android with BlueBox application
-app available in the play store : [bluebox android application](https://play.google.com/store/apps/details?id=com.bluebox.bluebox)
-
-
-    ![architecture](./installation/images/architecture_mvp3.jpg)
+- Android smartphone with [BlueBox](https://play.google.com/store/apps/details?id=com.bluebox.bluebox) installed from PlayStore
 
 ## Run from a fresh Raspberry install 🐍
 ```bash
