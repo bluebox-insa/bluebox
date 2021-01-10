@@ -337,7 +337,7 @@ def select_controller(bt_process, controller_addr):
         controller_addr (str)           : MAC address of a controller
     """
 
-   bt_process.stdin.write("select "+controller_addr+"\n")
+    bt_process.stdin.write("select "+controller_addr+"\n")
     bt_process.stdin.flush()
 
 def discover_device(bt_process, mac_addr):
@@ -497,8 +497,4 @@ print()
 
 
 if __name__ == '__main__':
-
-    from sys import argv
-    app.run(host=argv[1]) if len(argv)>1 else app.run(host="192.168.0.137")
-# or run with
-# flask run --host "$(hostname -I | cut -d ' ' -f 1)"
+    app.run(host="10.3.141.1", port=5000)
