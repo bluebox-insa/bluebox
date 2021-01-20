@@ -494,7 +494,3 @@ if len(devices_at_init)>0:
     sleep(3)
     reset("input")
 print()
-
-
-if __name__ == '__main__':
-    app.run(host="10.3.141.1", port=5000)

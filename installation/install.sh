@@ -355,7 +355,7 @@ serverurl=unix:///var/run/supervisor.sock ; use a unix:// URL  for a unix socket
 files = /etc/supervisor/conf.d/*.conf
 
 [program:launch_bluebox_server]
-command = /home/pi/bluebox/app.py
+command = /home/pi/bluebox/run.sh
 autostart = true
 autorestart = true
 
@@ -378,17 +378,5 @@ log "Installing Python dependencies for the BlueBox server"
 log "Installing Python dependencies for Bluetool"
     apt-get install -qq libcairo2-dev
 
-log "Installing RaspAP"
-    log "\033[1;31mTHIS WILL ERASE YOUR WI-FI CONFIGURATION AND YOUR RASPBERRY WONT BE ACCESSIBLE OVER WI-FI ANYMORE"
-    yesNo=""
-    while [[ $yesNo != "yes" && $yesNo != "no" ]]
-        do read -p "Are you sure you wish to continue (yes/no): " yesNo
-    done
-    if [[ $yesNo == "yes" ]]
-        then log "Installing RaspAP (answer 'yes' to everything)"
-        curl -sL "https://install.raspap.com" | bash
-        log "Installation success."
-    else
-        log "\033[1;31mAbort..."
-        log "\033[1;31mInstallation failed."
-    fi
+
+log "Installation success."
